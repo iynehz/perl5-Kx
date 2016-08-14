@@ -1,0 +1,366 @@
+Kx version 0.01
+===============
+
+This is Alpha code. It has had some reasonable testing but is really just
+experimental at the moment. I have run and tested this on Linux and
+MacOSX only. MacOSX is my major development platform (x86 only).
+
+INSTALLATION
+
+first get a copy of c.o from kx.com for your architecture
+make libkdb.a from c.o for easy linking
+	ar -r libkdb.a c.o
+or
+	libtool -static -o libkdb.a c.o
+
+perl Makefile.PL
+make
+make test     # you must have a 'q' process running on port 2222 (q -p 2222)
+make install
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+  c.o from kx.com for your architecture
+
+  q -p 2222  # for make test to actually do anything
+
+NAME
+    Kx - Perl extension for Kdb+ http://kx.com
+
+SYNOPSIS
+      use Kx;
+
+DESCRIPTION
+    Create a wrapper around Kdb+ and Q in Perl using the C interface to Kdb+
+
+EXPORT
+    None by default.
+
+METHODS
+  New
+        $k = Kx->new(name=>'local22', host=>'localhost', port=>2222);
+
+    Create a new K object. Set the connection paramaters to conect to 'host'
+    and 'port' as specified.
+
+    No connection is made to the server until you call $k->connect()
+
+        $k = new K host=>'localhost', port=>2222;
+        $k->connect();  # defaults to default;
+
+        # picks up previous default connection to localhost port 2222 and
+        # will use it as well.
+        $k1 = new K;
+
+  Environment
+    There are a number of environment details you can glean from the Kdb+
+    server you are connected to. They are:
+
+        my $arrayref = $k->tables;     # The tables defined
+        my $arrayref = $k->funcs;      # The functions defined
+        my $arrayref = $k->views;      # The views defined
+        my $arrayref = $k->variables;  # The variables defined
+        my $arrayref = $k->memory;     # The memory details \w
+
+        my $dir = $k->cwd;              # The current working directory
+        my $dir = $k->chdir($newdir);   # Set the cwd
+        my $num = $k->GMToffset;        # Offset from GMT for times
+
+  TABLES
+    Create a new table in Kdb+ named mytab with 3 columns col1, col2 and
+    col3. The keys will be on col1 and col3 This equates to the Q command
+
+        # Q command
+        q)mytab:([col1:;col3:] col2:)
+
+        # The long winded Perl way
+        $k->Tnew(name=>'mytab',keys=>['col1','col3'],cols=>['col2']);
+
+    To add data use Tinsert(). Each row is added in the order defined above.
+    This line adds 1 into col1, 2 into col3 and 3 into col2 as the keys are
+    always defined before the other columns.
+
+        $k->Tinsert('mytab',1,2,3);
+
+    To do a select over a table use Tselect(). Tselect() takes a variable
+    name as its first argument. The select will be executed and assigned to
+    the variable you define. This way no data is passed from Kdb+ to the
+    client until it is needed.
+
+        $k->Tselect('a','select from mytab where col1>4');
+
+    To get the details of the stored selection
+
+        my $numrows = $k->Tnumrows('a');
+        my $numcols = $k->Tnumcols('a');
+
+    You may have run a number of Tselects() and now wish to pull back the
+    data. To do this use Tget()
+
+        $k->Tget('table');   # table must be a table in the server
+
+    To get access to random values in the returned table from Tget().
+
+        $val = $k->Tindex(row,col);
+
+    To get the list of column names as Kdb+ knows them.
+
+        my $header = $k->Theader();
+            print "@$header\n";
+
+    To get the meta data for a table as defined in KDB do this.
+
+        my @meta = $k->Tmeta($table);
+        foreach(@meta)
+        {
+            print "(name type) => (@$_)\n";
+        }
+
+    To get a Perl reference to a column of data from the table (as K is
+    column oriented) do the following:
+
+        my $colref = $k->Tcol(0);   # get the zeroth column
+        print "Column 0 data is: @$colref\n";
+
+    Finally to delete or remove a table by name from the server:
+
+        $k->Tdelete('table');
+
+    Here is a list of the complete table methods we have so far:
+
+        $k->Tnew(name=>'thename',keys=>[],cols=>[]);
+        $k->Tinsert('table',1,2,3);
+        $k->Tbulkinsert('table',col1=>[],col2=>[],...);
+        $k->Tget('select statement');
+        $scalar = $k->Tindex($row,$col);
+        $arref  = $k->Tcol(2);
+        $arref  = $k->Theader;
+        $x      = $k->Tnumrows;
+        $y      = $k->Tnumcols;
+        $k->Tselect('table','select statement');
+        $k->Tsave('table','file');
+        $k->Tappend('table','file');
+        $k->Tload('table','file');
+        $k->Tdelete('table');
+
+  COMMANDS
+    Execute the code on an already accessable Kdb+ server. The query is
+    executed and the results are held in K structures in RAM. Example
+
+        $return = $k->cmd('b:til 100');
+
+    The cmd() function will return a reference to an array if the Q command
+    returns a list. It will return a simple scalar if the result is a scalar
+    response from Q. It will return a hash reference if the return result
+    from Q is either table/keyed table/dictionary. You need to know what you
+    are doing so can know what the result is (or use Perl's ref()).
+
+    If you have a Q script that you wish to run against the Kdb+ server you
+    can use the do(file) method. Any error in your script that is caught
+    will stop do(file) from proceeding. If you don't care when it is done
+    then use dolater(file).
+
+    Both do() and dolater() don't return anything useful. They just blindly
+    execute each line of Q against the server. If you want to check each
+    command and do stuff as a result then use cmd() and check the result.
+
+    An example file name foo.txt holds the lines:
+
+        t:([]a:();b:())
+        insert[`t](`a;10.70)
+        insert[`t](`b;-5.6)
+        insert[`t](`c;21.73)
+
+    You can run that file by doing this:
+
+        $k->do("foo.txt");
+
+  ATOMS and STRUCTURES
+    To create Kdb+ atoms locally in RAM use the following calls.
+
+        $k = new K;
+
+        my $d;
+        $d=$k->bool(0);           # boolean
+        $d=$k->byte(100);         # char
+        $d=$k->char(ord('a'));    # char
+        $d=$k->short(20);
+        $d=$k->int(70);
+        $d=$k->long(93939);
+        $d=$k->real(20.44);        # remember 20.44 may look close as a real
+        $d=$k->float(20.44);       # should look closer to 20.44 as a float
+        $d=$k->sym('mysymbol');    # A Kdb+ symbol
+        $d=$k->date(2007,4,22);    # integer encoded date year, month, day
+        $d=$k->dt(time());         # Kdb+ datetime from epoch
+        $d=$k->tm(100);            # Time type in milliseconds
+
+    These allow for fine grained control over the 'type' of K object you
+    want. If you don't mind particularly about the type conversions then you
+    can use perl2K() like this.
+
+        $d = $k->perl2K('mysymbol');
+        $d = $k->perl2K([qw/this will be a K list of symbols/]);
+        $d = $k->perl2K({this => 1, that => 2, 'is a' => 'dict'});
+
+    To get a Perl value back from a Kdb+ atom try this;
+
+        my $val = $d->val();
+
+    To get the internal value back from a Kdb+ atom try this;
+
+        my $val = $k->kval;  # used in $x->cmd('func',$val)
+
+    As a further comment on the date() method. When you look at the value
+
+    Example:
+
+       # Simple create
+       my $k    = new K;
+       my $bool = $k->bool(0);
+       print "My boolean in K is ",$bool->val,"\n";
+
+  LISTS
+    These list functions create in memory local lists outside of any 'q'
+    running process. These will allow you to create very large simple lists
+    without blowing out all your memory.
+
+    To create a simple Kdb+ list of a single type use the listof() function.
+    The type of the list is passed in as the second aregument and can be one
+    of:
+
+        Kx::KC()  char
+        Kx::KD()  date yyyy mm dd
+        Kx::KE()  real
+        Kx::KF()  float
+        Kx::KG()  byte
+        Kx::KH()  short
+        Kx::KI()  integer
+        Kx::KJ()  long
+        Kx::KM()  month
+        Kx::KS()  symbol (internalised string)
+        Kx::KT()  time
+        Kx::KU()  minute
+        Kx::KV()  second
+        Kx::KZ()  datetime epoch seconds
+
+    Example simple lists:
+
+        my $k = new K;
+        my $list = $k->listof(20,Kx::KS());      # List of 20 symbols
+        for( my $i=0; $i < 20; $i++)
+        {
+            $list->at($i,"symbol$i");
+        }
+
+        # To get at the 4th element
+        my $sym = $list->at(3);     # symbol3
+
+        my $perl_list = $list->list;
+        print "Symbols are @$perl_list\n";
+
+        # dates
+        $d = $k->listof(20,Kx::KD());
+        for( my $i=0; $i < 20; $i++)
+        {
+            $d->at($i,2007,4,$i+1);  # 20070401 -> 20070421
+        }
+
+        # Add an extra date to the end of the list
+        my $day = $k->date(2007,4,30);
+        $d->joinatom($day->kval);
+
+
+Kx::LIST
+    You may wish to tie a Perl array to a Kdb+ variable. Well, you can do
+    that as well. Try something like this:
+
+        use K;
+    
+        my %config = (
+            host=>"localhost",
+            port=>2222,
+            type=>'symbol',
+            list=>'d',
+            create=>1
+        );
+        tie(@a, 'Kx::LIST', %config);
+    
+        # push lost of stuff on an array
+        my @array = (qw/aaaa bbbbb ccccc ddddddddd e f j h i j k l/) x 30000
+        ;
+        push(@a,@array);
+        push(@a,@array);
+        push(@a,@array);
+        print "\@a has ", scalar(@a)," elements\n";
+    
+        # Store
+        $a[3] = "Help me";
+        print "Elementt 3 is ",$a[3],"\n";
+
+    All the functions defined in perltie for lists are included.
+
+    Note: 'type' is a Kdb+ type as defined in Types below - it is the type
+    for the array. Only simple types are allowed at the moment.
+
+Kx::HASH
+    You may wish to tie a Perl hash to a Kdb+ variable. Well, you can do
+    that as well. Try something like this:
+
+        use K;
+
+        my %config = (
+                host=>"localhost",
+                port=>2222,
+                ktype=>'symbol',
+                vtype=>'int',
+                dict=>'x',
+                create=>1
+        );
+        tie(%x, 'Kx::HASH', %config);
+    
+        print "Size of hash x is :". scalar %x ."\n";
+        for(0..5)
+        {
+                $x{"a$_"} = $_;
+        }
+    
+        %y = %x;
+    
+        for(0..5)
+        {
+                print $y{"a$_"}," " if exists $y{"a$_"};
+        }
+        print "\n";
+    
+        while(($k,$v) = each %x)
+        {
+                print "Key=>$k is $v\n";
+        }
+        untie(%x);
+
+    All the functions defined in perltie for hashs are included.
+
+    Note: ktype is a Kdb+ type as defined in Types below - it is the 'key'
+    type for the hash. vtype is also defined in Types - it is the value
+    type. Only simple types are allowed at the moment.
+
+SEE ALSO
+    http://kx.com
+
+    http://code.kx.com
+
+    See the test code under the 't' directory of this module for more
+    details on how to call each method.
+
+AUTHOR
+    Mark Pfeiffer, <markpf at mlp-consulting dot com dot au>
+
+COPYRIGHT AND LICENSE
+    Copyright (C) 2007 by Mark Pfeiffer
+
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself, either Perl version 5.8.6 or, at
+    your option, any later version of Perl 5 you may have available.
+

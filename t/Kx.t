@@ -5,6 +5,9 @@
 
 # change 'tests => 2' to 'tests => last_test_to_print';
 
+use strict;
+use warnings;
+
 use Test::More tests => 71;
 #use Test::More qw(no_plan);
 use Data::Dumper;
@@ -14,7 +17,8 @@ BEGIN { use_ok('Kx') };
 my $fail = 0;
 foreach my $constname (qw(
 	KC KD KE KF KG KH KI KJ KM KS KT KU KV KZ XD XT)) {
-  next if (eval "my \$a = $constname; 1");
+  no strict 'refs';
+  next if (eval "my \$a = 'Kx::$constname'->(); 1");
   if ($@ =~ /^Your vendor has not defined Kx macro $constname/) {
     print "# pass: $@";
   } else {
@@ -42,7 +46,7 @@ die "Can't connect to KDB+ " unless $rv;
 # Big bang test straight up, Stuff a hash of interetsing stuff into Kdb+
 # and get it back for comparision, restuff it then compare it in Kdb+
 # and get the result back. Then test to see its OK
-%p = (
+my %p = (
 	'192.168.1.200' => ['Changes', 'K-0.01.tar.gz', 'K.bs'],
 	'K.c' => [ {'K.o' => 'K.xs'},  {'MANIFEST' => 'META.yml'}, 'Makefile'],
 	'Makefile.PL' => 'README',
@@ -57,13 +61,13 @@ die "Can't connect to KDB+ " unless $rv;
 	'ppport.h' => 't',
 	'test.c' => {'20' => 'twenty', '30' => [1,2,3,4,5]},
 );
-$kz = $k->perl2k(\%p);
+my $kz = $k->perl2k(\%p);
 $k->cmd('{a::x}',$kz->kval);
-$p = $k->cmd('a');
+my $p = $k->cmd('a');
 $kz = $k->perl2k($p);
 $k->cmd('{b::x}',$kz->kval);
 
-$r = $k->cmd('asc a = asc b');
+my $r = $k->cmd('asc a = asc b');
 is($r->{'192.168.1.200'}[0], 1, "192.168.1.200[0]");
 is($r->{'192.168.1.200'}[1], 1, "192.168.1.200[1]");
 is($r->{'192.168.1.200'}[2], 1, "192.168.1.200[2]");
@@ -81,7 +85,7 @@ is($r->{'K.c'}[2],1, "K.c[2]");
 #st1      | ,0j        0 1j       0 1 2j     0 1 2 3j   0 1 2 3 4j 0 1 2 3 4 5..
 #interface| interface0 interface1 interface2 interface3 interface4 interface5 ..
 #st2      | ,0j        0 1j       0 1 2j     0 1 2 3j   0 1 2 3 4j 0 1 2 3 4 5..
-$x = {
+my $x = {
 	"interface" => [ map {"interface$_"} 0..20],
 	"st1"       => [ map {[0..$_]} 0..20],
 	"st2"       => [ map {[0..$_]} 0..20],
@@ -133,7 +137,7 @@ $time[5]+=1900;
 $time[4]++;
 is($time[5].$time[4].$time[3],"2007422", "Date");
 
-$now = time;
+my $now = time;
 $d = $k->dt($now);         # Kdb+ datetime from epoch
 is($d->val, $now, "DateTime");
 
@@ -213,7 +217,7 @@ print "GMToffset is $ref\n";
 
 my $time = time;
 $k->Tnew(name=>"t",cols=>[qw/tm k v/]);
-my $now = time;
+$now = time;
 my $c = 50;
 my $z = ".z.z;" x $c;
 chop($z);
@@ -236,7 +240,7 @@ ok($k->Tget('a'), 'Tget a');
 is($k->Tindex(3,2), 8, 'Tindex a');
 is($k->Theader()->[1], 'k', 'Theader a');
 is($k->Tcol(1)->[20],2, 'Tcol a');
-$type = ($k->Tmeta('a'))[0]->[1];
+my $type = ($k->Tmeta('a'))[0]->[1];
 $type = 'z' if  $type eq 'datetime';
 is($type, 'z', 'Tmeta a');
 
@@ -248,24 +252,24 @@ $x = $k->cmd('b: "abcd"');
 $x = $k->cmd('b');
 is($x,'abcd','cmd() char list');
 
-$s = 'xyzzy';
-$val = $k->listof(length($s),Kx::KG());
+my $s = 'xyzzy';
+my $val = $k->listof(length($s),Kx::KG());
 $val->setbin($s);
 $x = $k->cmd('{b:: x}',$val->kval);
 $x = $k->cmd('b');
 is($x,$s,'cmd() char, listof, setbin, k1');
 
 $s  = 'xyzzy';
-$s1 = 'xyzzy';
+my $s1 = 'xyzzy';
 $val = $k->listof(length($s),Kx::KG());
 $val->setbin($s);
-$val2 = $k->listof(length($s),Kx::KG());
+my $val2 = $k->listof(length($s),Kx::KG());
 $val2->setbin($s);
 $x = $k->cmd('{b:: x,y}',$val->kval,$val2->kval);
 $x = $k->cmd('b');
 is($x,$s.$s1,'cmd() char, listof, setbin, k2');
 
-$rtn = $k->cmd('a');
+my $rtn = $k->cmd('a');
 is($rtn->{'v'}[49],100,'cmd() table into hash');
 $k->Tget('a');
 is($k->Tindex(3,2), 8, 'cmd() then Tindex a');

@@ -4,6 +4,10 @@
 
 #include "ppport.h"
 
+#ifndef KXVER
+#define KXVER 3
+#endif
+
 #include "./k.h"
 
 typedef struct k0 Kstruct;

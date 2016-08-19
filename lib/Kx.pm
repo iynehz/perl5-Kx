@@ -11,61 +11,62 @@ my $DEBUG = 0;
 $Kx::VERSION = '0.039';
 
 my %NULL = (
-	'symbol' => '`',
-	'short'  => "0Nh",
-	'int'    => "0N",
-	'long'   => "0Nj",
-	'real'   => "0Ne",
-	'float'  => "0n",
-	'char'   => " ",
-    'month'  => '0Nm',
-	'date'   => '0Nd',
-	'datetime' => '0Nz',
-	'minute' => '0Nu',
-	'second' =>  '0Nv',
-	'time'   => '0Nt', 
+    'symbol'   => '`',
+    'short'    => "0Nh",
+    'int'      => "0N",
+    'long'     => "0Nj",
+    'real'     => "0Ne",
+    'float'    => "0n",
+    'char'     => " ",
+    'month'    => '0Nm',
+    'date'     => '0Nd',
+    'datetime' => '0Nz',
+    'minute'   => '0Nu',
+    'second'   => '0Nv',
+    'time'     => '0Nt',
 );
 my %CAST = (
-	'symbol' => '`$"',
-	'short'  => '"h"$',
-	'int'    => '"i"$',
-	'long'   => '"j"$',
-	'real'   => '"e"$',
-	'float'  => '"f"$',
-	'char'   => '"c"$',
-    'month'  => '"m"$',
-	'date'   => '"d"$',
-	'datetime' => '"z"$',
-	'minute' => '"u"$',
-	'second' =>  '"v"$',
-	'time'   => '"t"$', 
+    'symbol'   => '`$"',
+    'short'    => '"h"$',
+    'int'      => '"i"$',
+    'long'     => '"j"$',
+    'real'     => '"e"$',
+    'float'    => '"f"$',
+    'char'     => '"c"$',
+    'month'    => '"m"$',
+    'date'     => '"d"$',
+    'datetime' => '"z"$',
+    'minute'   => '"u"$',
+    'second'   => '"v"$',
+    'time'     => '"t"$',
 );
 
 my @TYP = qw/KC KD KE KF KG KH KI KJ KM KS KT KU KV KZ XD XT/;
 
-my %DB = ();  # Place to store class wide connections to KDBs
+my %DB = ();    # Place to store class wide connections to KDBs
 
-sub whowasi { (caller(1))[3] . '()' }
+sub whowasi { ( caller(1) )[3] . '()' }
 
 sub AUTOLOAD {
+
     # This AUTOLOAD is used to 'autoload' constants from the constant()
     # XS function.
 
     my $constname;
     our $AUTOLOAD;
-    ($constname = $AUTOLOAD) =~ s/.*:://;
+    ( $constname = $AUTOLOAD ) =~ s/.*:://;
     croak "&Kx::constant not defined" if $constname eq 'constant';
-    my ($error, $val) = constant($constname);
+    my ( $error, $val ) = constant($constname);
     if ($error) { croak $error; }
     {
-	no strict 'refs';
-	    *$AUTOLOAD = sub { $val };
+        no strict 'refs';
+        *$AUTOLOAD = sub { $val };
     }
     goto &$AUTOLOAD;
 }
 
 require XSLoader;
-XSLoader::load('Kx', $Kx::VERSION);
+XSLoader::load( 'Kx', $Kx::VERSION );
 
 =head1 NAME
 
@@ -121,40 +122,34 @@ attribute thus:
 =cut
 
 # we use %DB to hold all our connection details.
-sub new
-{
-	my $self  = shift;
-	my %opts  = @_;
-	my $class = ref($self) || $self;
+sub new {
+    my $self  = shift;
+    my %opts  = @_;
+    my $class = ref($self) || $self;
 
-	my $name = 'default';
-	$name = $opts{'name'} if defined $opts{'name'};
+    my $name = 'default';
+    $name = $opts{'name'} if defined $opts{'name'};
 
-	my $ref = {'name' => $name};
-	if(defined $opts{'host'})
-	{
-		$DB{$name}{'host'} = $opts{'host'};
-	}
-	if(defined $opts{'port'})
-	{
-		$DB{$name}{'port'} = $opts{'port'};
-	}
-	if(defined $opts{'userpass'})
-	{
-		$DB{$name}{'userpass'} = $opts{'userpass'};
-	}
-	if(defined $opts{'check_for_errors'})
-	{
-		$DB{$name}{'check_for_errors'} = $opts{'check_for_errors'};
-	}
+    my $ref = { 'name' => $name };
+    if ( defined $opts{'host'} ) {
+        $DB{$name}{'host'} = $opts{'host'};
+    }
+    if ( defined $opts{'port'} ) {
+        $DB{$name}{'port'} = $opts{'port'};
+    }
+    if ( defined $opts{'userpass'} ) {
+        $DB{$name}{'userpass'} = $opts{'userpass'};
+    }
+    if ( defined $opts{'check_for_errors'} ) {
+        $DB{$name}{'check_for_errors'} = $opts{'check_for_errors'};
+    }
 
-	# Get hold of any previously defined connection handle
-	if(defined $DB{$name}{'kdb'})
-	{
-		$ref->{'kdb'} = $DB{$name}{'kdb'}; # no need for connect
-		$DB{$name}{'count'}++;
-	}
-	return bless $ref, $class;
+    # Get hold of any previously defined connection handle
+    if ( defined $DB{$name}{'kdb'} ) {
+        $ref->{'kdb'} = $DB{$name}{'kdb'};    # no need for connect
+        $DB{$name}{'count'}++;
+    }
+    return bless $ref, $class;
 }
 
 =head2 Connect
@@ -174,48 +169,47 @@ To connect to a defined server say 'local22'
   }
  
 =cut
-sub connect
-{
-	my $self = shift;
-	my $name = shift || 'default';
 
-	return undef unless exists $DB{$name}{'host'} && exists $DB{$name}{'port'};
+sub connect {
+    my $self = shift;
+    my $name = shift || 'default';
 
-	if(!defined $DB{$name}{'kdb'})
-	{
-		# Create a new connection
-		# host, port and username password details
-		if(defined $DB{$name}{'userpass'})
-		{
-			$DB{$name}{'kdb'} = khpu($DB{$name}{'host'}, 
-										$DB{$name}{'port'},
-										$DB{$name}{'userpass'});
-		}
-		# host, port only
-		else
-		{
-			$DB{$name}{'kdb'} = khp($DB{$name}{'host'}, $DB{$name}{'port'});
-		}
-		unless($DB{$name}{'kdb'} > 0)
-		{
-			carp "Kx->connect failed to connect. ". &whowasi ."\n" if $DEBUG;
-			undef $self->{'kdb'};
-			undef $DB{$name}{'kdb'};
-			return undef;
-		}
-	}
+    return undef unless exists $DB{$name}{'host'} && exists $DB{$name}{'port'};
 
-	# Are we moving between connections
-	if($self->{'name'} ne $name)
-	{
-		$DB{$self->{'name'}}{'count'}--;
-	}
+    if ( !defined $DB{$name}{'kdb'} ) {
 
-	$DB{$name}{'count'}++;
-	$self->{'kdb'}  = $DB{$name}{'kdb'};
-	$self->{'name'} = $name;
+        # Create a new connection
+        # host, port and username password details
+        if ( defined $DB{$name}{'userpass'} ) {
+            $DB{$name}{'kdb'} = khpu(
+                $DB{$name}{'host'},
+                $DB{$name}{'port'},
+                $DB{$name}{'userpass'}
+            );
+        }
 
-	return $self->{'kdb'};
+        # host, port only
+        else {
+            $DB{$name}{'kdb'} = khp( $DB{$name}{'host'}, $DB{$name}{'port'} );
+        }
+        unless ( $DB{$name}{'kdb'} > 0 ) {
+            carp "Kx->connect failed to connect. " . &whowasi . "\n" if $DEBUG;
+            undef $self->{'kdb'};
+            undef $DB{$name}{'kdb'};
+            return undef;
+        }
+    }
+
+    # Are we moving between connections
+    if ( $self->{'name'} ne $name ) {
+        $DB{ $self->{'name'} }{'count'}--;
+    }
+
+    $DB{$name}{'count'}++;
+    $self->{'kdb'}  = $DB{$name}{'kdb'};
+    $self->{'name'} = $name;
+
+    return $self->{'kdb'};
 }
 
 =head2 Environment
@@ -257,120 +251,104 @@ like this.
 
 =cut
 
-sub env
-{
-	my $self = shift;
-	return undef unless defined $self->{'kdb'};
+sub env {
+    my $self = shift;
+    return undef unless defined $self->{'kdb'};
 
-	# OK we have aconnection and it is valid. Pick up some meta details
-	# from the server
-	$self->{'tables'}       = k2parray0(k($self->{'kdb'},'\a'));
-	$self->{'funcs'}        = k2parray0(k($self->{'kdb'},'\f'));
-	$self->{'views'}        = k2parray0(k($self->{'kdb'},'\b'));
-	$self->{'variables'}    = k2parray0(k($self->{'kdb'},'\v'));
-	$self->{'GMToffset'}    = k2pscalar0(k($self->{'kdb'},'(.z.Z-.z.z)*24'));
-	$self->{'releasedate'}  = k2pscalar0(k($self->{'kdb'},'.z.k'));
-	$self->{'gmt'}          = k2pscalar0(k($self->{'kdb'},'.z.z'));
-	$self->{'local'}        = k2pscalar0(k($self->{'kdb'},'.z.Z'));
-	$self->{'mem'}          = k2parray0(k($self->{'kdb'},'\w'));
-	$self->{'cwd'}          = k2pscalar0(k($self->{'kdb'},'\cd'));
+    # OK we have aconnection and it is valid. Pick up some meta details
+    # from the server
+    $self->{'tables'}    = k2parray0( k( $self->{'kdb'}, '\a' ) );
+    $self->{'funcs'}     = k2parray0( k( $self->{'kdb'}, '\f' ) );
+    $self->{'views'}     = k2parray0( k( $self->{'kdb'}, '\b' ) );
+    $self->{'variables'} = k2parray0( k( $self->{'kdb'}, '\v' ) );
+    $self->{'GMToffset'} = k2pscalar0( k( $self->{'kdb'}, '(.z.Z-.z.z)*24' ) );
+    $self->{'releasedate'} = k2pscalar0( k( $self->{'kdb'}, '.z.k' ) );
+    $self->{'gmt'}         = k2pscalar0( k( $self->{'kdb'}, '.z.z' ) );
+    $self->{'local'}       = k2pscalar0( k( $self->{'kdb'}, '.z.Z' ) );
+    $self->{'mem'} = k2parray0( k( $self->{'kdb'}, '\w' ) );
+    $self->{'cwd'} = k2pscalar0( k( $self->{'kdb'}, '\cd' ) );
 
-	return (
-		$self->{'tables'},
-		$self->{'funcs'},
-		$self->{'views'},
-		$self->{'variables'},
-		$self->{'GMToffset'},
-		$self->{'releasedate'},
-		$self->{'gmt'},
-		$self->{'local'},
-		$self->{'mem'},
-		$self->{'cwd'},
-	);
+    return (
+        $self->{'tables'},    $self->{'funcs'},     $self->{'views'},
+        $self->{'variables'}, $self->{'GMToffset'}, $self->{'releasedate'},
+        $self->{'gmt'},       $self->{'local'},     $self->{'mem'},
+        $self->{'cwd'},
+    );
 }
 
 # a:@[.:;"\\ls -l /tmp/zzz > /tmp/.qoscmd 2>&1; cat /tmp/.qoscmd";()]
-sub oscmd
-{
-	my $self = shift;
-	my $cmd  = shift || return undef;
-	my $cap  = shift;
+sub oscmd {
+    my $self = shift;
+    my $cmd  = shift || return undef;
+    my $cap  = shift;
 
-	my $q = '@[.:;"\\\\' . $cmd;
+    my $q = '@[.:;"\\\\' . $cmd;
 
-	if(defined $cap)
-	{
-		# Use cap as a capture file to grap stdout and stderr
-		$q .= "> $cap 2>&1; cat $cap";
-	}
+    if ( defined $cap ) {
 
-	$q .= '";()]';
-	my $ref = k2parray0(k($self->{'kdb'},$q));
-	my @d = map {$_->[0]} @$ref;
-	return \@d;
+        # Use cap as a capture file to grap stdout and stderr
+        $q .= "> $cap 2>&1; cat $cap";
+    }
+
+    $q .= '";()]';
+    my $ref = k2parray0( k( $self->{'kdb'}, $q ) );
+    my @d = map { $_->[0] } @$ref;
+    return \@d;
 }
 
-sub memory
-{
-	my $self = shift;
-	$self->{'mem'} = k2parray0(k($self->{'kdb'},'\w'));
-	return $self->{'mem'};
+sub memory {
+    my $self = shift;
+    $self->{'mem'} = k2parray0( k( $self->{'kdb'}, '\w' ) );
+    return $self->{'mem'};
 }
 
-sub cwd
-{
-	my $self = shift;
-	$self->{'cwd'} = k2pscalar0(k($self->{'kdb'},'\cd'));
-	return $self->{'cwd'};
+sub cwd {
+    my $self = shift;
+    $self->{'cwd'} = k2pscalar0( k( $self->{'kdb'}, '\cd' ) );
+    return $self->{'cwd'};
 }
 
-sub chdir
-{
-	my $self = shift;
-	my $d    = shift || '';
-	$self->{'cwd'} = k2pscalar0(k($self->{'kdb'},"\\cd $d"));
-	$self->{'cwd'} = k2pscalar0(k($self->{'kdb'},'\cd'));
-	return $self->{'cwd'};
+sub chdir {
+    my $self = shift;
+    my $d = shift || '';
+    $self->{'cwd'} = k2pscalar0( k( $self->{'kdb'}, "\\cd $d" ) );
+    $self->{'cwd'} = k2pscalar0( k( $self->{'kdb'}, '\cd' ) );
+    return $self->{'cwd'};
 }
 
-sub tables
-{
-	my $self = shift;
-	$self->env unless defined $self->{'tables'};
-	return undef unless $self->{'tables'};
-	return $self->{'tables'};
+sub tables {
+    my $self = shift;
+    $self->env   unless defined $self->{'tables'};
+    return undef unless $self->{'tables'};
+    return $self->{'tables'};
 }
 
-sub funcs
-{
-	my $self = shift;
-	$self->env unless defined $self->{'funcs'};
-	return undef unless $self->{'funcs'};
-	return $self->{'funcs'};
+sub funcs {
+    my $self = shift;
+    $self->env   unless defined $self->{'funcs'};
+    return undef unless $self->{'funcs'};
+    return $self->{'funcs'};
 }
 
-sub views
-{
-	my $self = shift;
-	$self->env unless defined $self->{'views'};
-	return undef unless $self->{'views'};
-	return $self->{'views'};
+sub views {
+    my $self = shift;
+    $self->env   unless defined $self->{'views'};
+    return undef unless $self->{'views'};
+    return $self->{'views'};
 }
 
-sub variables
-{
-	my $self = shift;
-	$self->env unless defined $self->{'variables'};
-	return undef unless $self->{'variables'};
-	return $self->{'variables'};
+sub variables {
+    my $self = shift;
+    $self->env   unless defined $self->{'variables'};
+    return undef unless $self->{'variables'};
+    return $self->{'variables'};
 }
 
-sub GMToffset
-{
-	my $self = shift;
-	$self->env unless defined $self->{'GMToffset'};
-	return undef unless $self->{'GMToffset'};
-	return $self->{'GMToffset'};
+sub GMToffset {
+    my $self = shift;
+    $self->env   unless defined $self->{'GMToffset'};
+    return undef unless $self->{'GMToffset'};
+    return $self->{'GMToffset'};
 }
 
 =head2 TABLES
@@ -505,261 +483,240 @@ test files that came with this module for more details on how it is used.
 
 =cut
 
-sub Tnew
-{
-	my $self = shift;
-	my %arg = @_;
+sub Tnew {
+    my $self = shift;
+    my %arg  = @_;
 
-	return undef unless defined $self->{'kdb'};
-	return undef unless defined $arg{'name'};
-	return undef unless defined $arg{'cols'};
+    return undef unless defined $self->{'kdb'};
+    return undef unless defined $arg{'name'};
+    return undef unless defined $arg{'cols'};
 
-	delete $self->{'COLS'} if defined $self->{'COLS'};
+    delete $self->{'COLS'} if defined $self->{'COLS'};
 
-	# string to create the table
-	my $q = $arg{'name'}. ":([";
+    # string to create the table
+    my $q = $arg{'name'} . ":([";
 
-	# string to create a bulk insert function
-	my $b = 'pblkinsert_'.$arg{'name'}.':{insert[`'.$arg{'name'}.'](';
+    # string to create a bulk insert function
+    my $b = 'pblkinsert_' . $arg{'name'} . ':{insert[`' . $arg{'name'} . '](';
 
-	my $i = 0;
-	if(defined $arg{'keys'})
-	{
-		foreach my $key (@{$arg{'keys'}})
-		{
-			$q .= $key.':();';
-			$b .= $key.":(x[$i]);";
-			$i++;
-		}
-		chop($q);  # one ; too many
-	}
-	$q .= "]";
-	foreach my $c (@{$arg{'cols'}})
-	{
-		$q .= $c . ':();';
-		$b .= $c . ":(x[$i]);";
-		$i++;
-	}
-	chop($q); chop($b);
-	$q .= ')';   # mytab:([col1:();col3:()]col2:())
-	$b .= ')}';  # pblkinsert_mytab:{insert[`mytab](c1:(x[0]);c2:(x[1]))}
+    my $i = 0;
+    if ( defined $arg{'keys'} ) {
+        foreach my $key ( @{ $arg{'keys'} } ) {
+            $q .= $key . ':();';
+            $b .= $key . ":(x[$i]);";
+            $i++;
+        }
+        chop($q);    # one ; too many
+    }
+    $q .= "]";
+    foreach my $c ( @{ $arg{'cols'} } ) {
+        $q .= $c . ':();';
+        $b .= $c . ":(x[$i]);";
+        $i++;
+    }
+    chop($q);
+    chop($b);
+    $q .= ')';       # mytab:([col1:();col3:()]col2:())
+    $b .= ')}';      # pblkinsert_mytab:{insert[`mytab](c1:(x[0]);c2:(x[1]))}
 
-	# Create the table
-	my $k  = k($self->{'kdb'},$q);
-	if($k == 0)
-	{
-		dor0($k); # release memory
-		return undef;
-	}
-	if(kType($k) < 0)
-	{
-		carp "Kx->tablecreate error ", k2pscalar($k),"\n";
-		dor0($k); # release memory
-		return undef;
-	}
-	dor0($k); # release memory
+    # Create the table
+    my $k = k( $self->{'kdb'}, $q );
+    if ( $k == 0 ) {
+        dor0($k);    # release memory
+        return undef;
+    }
+    if ( kType($k) < 0 ) {
+        carp "Kx->tablecreate error ", k2pscalar($k), "\n";
+        dor0($k);    # release memory
+        return undef;
+    }
+    dor0($k);        # release memory
 
-	# Create the bulkinsert function
-	$k  = k($self->{'kdb'},$b);
-	if($k == 0)
-	{
-		dor0($k); # release memory
-		return undef;
-	}
-	if(kType($k) < 0)
-	{
-		carp "Kx->tablecreate bulkinsert function error ", k2pscalar($k),"\n";
-		dor0($k); # release memory
-		return undef;
-	}
+    # Create the bulkinsert function
+    $k = k( $self->{'kdb'}, $b );
+    if ( $k == 0 ) {
+        dor0($k);    # release memory
+        return undef;
+    }
+    if ( kType($k) < 0 ) {
+        carp "Kx->tablecreate bulkinsert function error ", k2pscalar($k), "\n";
+        dor0($k);    # release memory
+        return undef;
+    }
 
-	dor0($k); # release memory
-	return 1;
+    dor0($k);        # release memory
+    return 1;
 }
 
-sub Tdelete
-{
-	my $self=shift;
-	my $var = shift || return undef;
+sub Tdelete {
+    my $self = shift;
+    my $var = shift || return undef;
 
-	delete $self->{'COLS'} if defined $self->{'COLS'};
+    delete $self->{'COLS'} if defined $self->{'COLS'};
 
-	#$self->{'K'}  = k($self->{'kdb'},"$var: null");
-	# .[`.;();_;`d]  will remove the d symbol from the current workspace
-	# This uses the Dot Fucntional form of Amend .[d;i;f;y] where
-	#    d is a dictionary, `d do it in place
-	#    i is and index, possibly multi level
-	#    f is a function to apply
-	#    y is the right hand side of a dyadic function
-	#
-	# So `. is the symbol name for the current workplace to be Ammeded in
-	# place
-	# () is an index for the whole domain of .
-	# _  is the drop function
-	# `d is the symbol name we wish to drop
-	my $k  = k($self->{'kdb'},".[`.;();_;`$var]");
-	dor0($k); # release memory
-	return 1;
+    #$self->{'K'}  = k($self->{'kdb'},"$var: null");
+    # .[`.;();_;`d]  will remove the d symbol from the current workspace
+    # This uses the Dot Fucntional form of Amend .[d;i;f;y] where
+    #    d is a dictionary, `d do it in place
+    #    i is and index, possibly multi level
+    #    f is a function to apply
+    #    y is the right hand side of a dyadic function
+    #
+    # So `. is the symbol name for the current workplace to be Ammeded in
+    # place
+    # () is an index for the whole domain of .
+    # _  is the drop function
+    # `d is the symbol name we wish to drop
+    my $k = k( $self->{'kdb'}, ".[`.;();_;`$var]" );
+    dor0($k);    # release memory
+    return 1;
 }
 
-sub check_for_errors
-{
-	my $k = shift;
-	my $q = shift || "";
+sub check_for_errors {
+    my $k = shift;
+    my $q = shift || "";
 
-	if($k == 0)
-	{
-		carp "Undefined K structure\n";
-		return 0;
-	}
-	if(kType($k) == -128)
-	{
-		carp "K error ", k2pscalar($k)," $q\n";
-		return 0;
-	}
-	return 1;
+    if ( $k == 0 ) {
+        carp "Undefined K structure\n";
+        return 0;
+    }
+    if ( kType($k) == -128 ) {
+        carp "K error ", k2pscalar($k), " $q\n";
+        return 0;
+    }
+    return 1;
 }
 
 #    $k->Tinsert('mytab',1,2,3); a single row
 #
-sub Tinsert
-{
-	my $self  = shift;
-	my $table = shift;
+sub Tinsert {
+    my $self  = shift;
+    my $table = shift;
 
-	return undef unless defined $self->{'kdb'};
+    return undef unless defined $self->{'kdb'};
 
-	delete $self->{'COLS'} if defined $self->{'COLS'};
+    delete $self->{'COLS'} if defined $self->{'COLS'};
 
-	# q)insert[`mytab](1;2;3)
-	my $q = 'insert[`' . $table . '](' . join(';',@_) . ')';
+    # q)insert[`mytab](1;2;3)
+    my $q = 'insert[`' . $table . '](' . join( ';', @_ ) . ')';
 
-	my $k  = k($self->{'kdb'},$q);
-	my $r  = 1;
-	if(exists $self->{'check_for_errors'})
-	{
-		$r = check_for_errors($k,$q);
-	}
-	dor0($k);
-	return $r;
+    my $k = k( $self->{'kdb'}, $q );
+    my $r = 1;
+    if ( exists $self->{'check_for_errors'} ) {
+        $r = check_for_errors( $k, $q );
+    }
+    dor0($k);
+    return $r;
 }
-
 
 #    $k->bulkinsert('mytab',$col1,$col2,$col3...);
 #
-sub bulkinsert
-{
-	my $self  = shift;
-	my $table = shift;
+sub bulkinsert {
+    my $self  = shift;
+    my $table = shift;
 
-	return undef unless defined $self->{'kdb'};
+    return undef unless defined $self->{'kdb'};
 
-	# Create the argument list
-	my $cols = ktn(0,scalar @_);
-	for(my $i=0; $i < @_; $i++)
-	{
-		setKarraymixed($cols,$i,$_[$i]) || croak "Can't setKarraymixed ";
-	}
+    # Create the argument list
+    my $cols = ktn( 0, scalar @_ );
+    for ( my $i = 0 ; $i < @_ ; $i++ ) {
+        setKarraymixed( $cols, $i, $_[$i] ) || croak "Can't setKarraymixed ";
+    }
 
-	k1(-($self->{'kdb'}),"pblkinsert_$table",$cols);
-	return 1;
+    k1( -( $self->{'kdb'} ), "pblkinsert_$table", $cols );
+    return 1;
 }
 
 #    $k->Tbulkinsert('mytab',$k=>$colref,$k1=>$col1ref);
 #
-sub Tbulkinsert
-{
-	my $self  = shift;
-	my $table = shift;
+sub Tbulkinsert {
+    my $self  = shift;
+    my $table = shift;
 
-	return undef unless defined $self->{'kdb'};
+    return undef unless defined $self->{'kdb'};
 
-	# q)insert[`mytab](id:($id);p:($prop);v:($v);tm:($z))
-	my $q = 'insert[`' . $table . '](';
-	while(@_)
-	{
-		my $key  = shift @_;
-		my $aref = shift @_;
-		return undef unless $aref;
-		$q .= "$key:(" . join(';',@$aref) .');';
-	}
-	chop $q;
-	$q .= ')';
+    # q)insert[`mytab](id:($id);p:($prop);v:($v);tm:($z))
+    my $q = 'insert[`' . $table . '](';
+    while (@_) {
+        my $key  = shift @_;
+        my $aref = shift @_;
+        return undef unless $aref;
+        $q .= "$key:(" . join( ';', @$aref ) . ');';
+    }
+    chop $q;
+    $q .= ')';
 
-	k(-($self->{'kdb'}),$q);
-	return 1;
+    k( -( $self->{'kdb'} ), $q );
+    return 1;
 }
 
-sub Tsave
-{
-	my $self  = shift;
-	my $table = shift;
-	my $file  = shift;
+sub Tsave {
+    my $self  = shift;
+    my $table = shift;
+    my $file  = shift;
 
-	return undef unless defined $table;
-	if(!defined $file && defined $table)
-	{
-		# Then filename os tablename
-		$file = $table
-	}
+    return undef unless defined $table;
+    if ( !defined $file && defined $table ) {
 
-	return undef unless defined $self->{'kdb'};
+        # Then filename os tablename
+        $file = $table;
+    }
 
-	# q).[`:filename;();:;tablename]
-	my $q = '.[`$":' . $file . '";();:;' . $table .']';
+    return undef unless defined $self->{'kdb'};
 
-	my $k  = k($self->{'kdb'},$q);
-	my $r = check_for_errors($k,$q);
-	dor0($k);
-	return $r;
+    # q).[`:filename;();:;tablename]
+    my $q = '.[`$":' . $file . '";();:;' . $table . ']';
+
+    my $k = k( $self->{'kdb'}, $q );
+    my $r = check_for_errors( $k, $q );
+    dor0($k);
+    return $r;
 }
 
-sub Tappend
-{
-	my $self  = shift;
-	my $table = shift;
-	my $file  = shift;
+sub Tappend {
+    my $self  = shift;
+    my $table = shift;
+    my $file  = shift;
 
-	return undef unless defined $table;
-	if(!defined $file && defined $table)
-	{
-		# Then filename os tablename
-		$file = $table
-	}
+    return undef unless defined $table;
+    if ( !defined $file && defined $table ) {
 
-	return undef unless defined $self->{'kdb'};
+        # Then filename os tablename
+        $file = $table;
+    }
 
-	# q).[`:filename;();:;tablename]
-	my $q = '.[`$":' . $file . '";();,;' . $table .']';
+    return undef unless defined $self->{'kdb'};
 
-	my $k  = k($self->{'kdb'},$q);
-	my $r = check_for_errors($k,$q);
-	dor0($k);
-	return $r;
+    # q).[`:filename;();:;tablename]
+    my $q = '.[`$":' . $file . '";();,;' . $table . ']';
+
+    my $k = k( $self->{'kdb'}, $q );
+    my $r = check_for_errors( $k, $q );
+    dor0($k);
+    return $r;
 }
 
-sub Tload
-{
-	my $self  = shift;
-	my $table = shift;
-	my $file  = shift;
+sub Tload {
+    my $self  = shift;
+    my $table = shift;
+    my $file  = shift;
 
-	return undef unless defined $table;
-	if(!defined $file && defined $table)
-	{
-		# Then filename os tablename
-		$file = $table
-	}
+    return undef unless defined $table;
+    if ( !defined $file && defined $table ) {
 
-	return undef unless defined $self->{'kdb'};
+        # Then filename os tablename
+        $file = $table;
+    }
 
-	# q).[`:filename;();:;tablename]
-	my $q = "$table: value`\$\":$file\"";
+    return undef unless defined $self->{'kdb'};
 
-	my $k  = k($self->{'kdb'},$q);
-	my $r = check_for_errors($k,$q);
-	dor0($k);
-	return $r;
+    # q).[`:filename;();:;tablename]
+    my $q = "$table: value`\$\":$file\"";
+
+    my $k = k( $self->{'kdb'}, $q );
+    my $r = check_for_errors( $k, $q );
+    dor0($k);
+    return $r;
 }
 
 #    $k->Tselect('a','select sum size by sym from trade where date=2006.09.25');
@@ -768,165 +725,148 @@ sub Tload
 #
 #    my $numrows = $k->Tnumrows('a');
 #    my $numcols = $k->Tnumcols('a');
-sub Tselect
-{
-	my $self  = shift;
-	my $table = shift || croak;
+sub Tselect {
+    my $self = shift;
+    my $table = shift || croak;
 
-	return undef unless defined $self->{'kdb'};
+    return undef unless defined $self->{'kdb'};
 
-	# q)a: select col1 from mytab where col1 > 7
-	my $q = $table . ':' . join('',@_);
+    # q)a: select col1 from mytab where col1 > 7
+    my $q = $table . ':' . join( '', @_ );
 
-	my $k  = k($self->{'kdb'},$q);
-	my $r = check_for_errors($k,$q);
-	dor0($k);
-	return $r;
+    my $k = k( $self->{'kdb'}, $q );
+    my $r = check_for_errors( $k, $q );
+    dor0($k);
+    return $r;
 }
 
-sub Tnumrows
-{
-	my $self  = shift;
-	my $table = shift || croak;
+sub Tnumrows {
+    my $self = shift;
+    my $table = shift || croak;
 
-	return undef unless defined $self->{'kdb'};
+    return undef unless defined $self->{'kdb'};
 
-	# q)count mytab
-	my $q = "count $table";
+    # q)count mytab
+    my $q = "count $table";
 
-	my $k  = k($self->{'kdb'},$q);
-	my $rows = k2pscalar0($k);
+    my $k = k( $self->{'kdb'}, $q );
+    my $rows = k2pscalar0($k);
 
-	return $rows;
+    return $rows;
 }
 
-sub Tnumcols
-{
-	my $self  = shift;
-	my $table = shift || croak;
+sub Tnumcols {
+    my $self = shift;
+    my $table = shift || croak;
 
-	return undef unless defined $self->{'kdb'};
+    return undef unless defined $self->{'kdb'};
 
-	my $q = "cols $table";
+    my $q = "cols $table";
 
-	my $k  = k($self->{'kdb'},$q);
-	my $cols = k2parray0($k);
-	my $numcols = scalar @$cols;
+    my $k       = k( $self->{'kdb'}, $q );
+    my $cols    = k2parray0($k);
+    my $numcols = scalar @$cols;
 
-	return $numcols;
+    return $numcols;
 }
 
-sub Tget
-{
-	my $self = shift;
-	my $cmd  = shift || return undef;
+sub Tget {
+    my $self = shift;
+    my $cmd = shift || return undef;
 
+    dor0( $self->{'K'} ) if defined $self->{'K'};    # release memory
+    return undef unless defined $self->{'kdb'};
 
-	dor0($self->{'K'}) if defined $self->{'K'}; # release memory
-	return undef unless defined $self->{'kdb'};
+    $self->{'K'} = kTable( $self->{'kdb'}, $cmd );
+    if ( $self->{'K'} == 0 ) {
+        return undef;
+    }
+    if ( kType( $self->{'K'} ) < 0 ) {
+        carp "Kx->Tget error $cmd", k2pscalar0( $self->{'K'} ), "\n";
+        return undef;
+    }
 
-	$self->{'K'}   = kTable($self->{'kdb'},$cmd);
-	if($self->{'K'} == 0)
-	{
-		return undef;
-	}
-	if(kType($self->{'K'}) < 0)
-	{
-		carp "Kx->Tget error $cmd", k2pscalar0($self->{'K'}),"\n";
-		return undef;
-	}
+    $self->{'colnames'} = k2parray( kTableH( $self->{'K'} ) );
+    $self->{'NUMROWS'}  = kTableNumRows( $self->{'K'} );
+    $self->{'NUMCOLS'}  = kTableNumCols( $self->{'K'} );
+    $self->{'COLS'}     = kTableCols( $self->{'K'} );
 
-	$self->{'colnames'} = k2parray(kTableH($self->{'K'}));
-	$self->{'NUMROWS'}  = kTableNumRows($self->{'K'});
-	$self->{'NUMCOLS'}  = kTableNumCols($self->{'K'});
-	$self->{'COLS'}     = kTableCols($self->{'K'});
-
-	return($self->{'NUMROWS'}, $self->{'NUMCOLS'});
+    return ( $self->{'NUMROWS'}, $self->{'NUMCOLS'} );
 }
 
+sub Tmeta {
+    my $self  = shift;
+    my $table = shift;
 
-sub Tmeta
-{
-	my $self = shift;
-	my $table = shift;
+    #my $q    = "select c,t from meta $table";
+    my $q = "meta $table";
+    my $meta = kTable( $self->{'kdb'}, $q );
+    return undef if $meta == 0;
+    if ( kType($meta) < 0 ) {
+        carp "Kx->meta error $q", k2pscalar0($meta), "\n";
+        return undef;
+    }
 
-	#my $q    = "select c,t from meta $table";
-	my $q    = "meta $table";
-	my $meta = kTable($self->{'kdb'},$q);
-	return undef if $meta == 0;
-	if(kType($meta) < 0)
-	{
-		carp "Kx->meta error $q", k2pscalar0($meta),"\n";
-		return undef;
-	}
+    my $rows = kTableNumRows($meta);
+    my @m    = ();
+    for ( my $i = 0 ; $i < $rows ; $i++ ) {
+        my $type = kTableIndex( $meta, $i, 1 );    # Version 2.2 support
+        if ( $type =~ /^\d+/ ) {
+            $type = chr($type);
+        }
+        push( @m, [ kTableIndex( $meta, $i, 0 ), $type ] );
+    }
+    dor0($meta);
 
-	my $rows = kTableNumRows($meta);
-	my @m = ();
-	for(my $i=0; $i < $rows; $i++)
-	{
-		my $type = kTableIndex($meta,$i,1);  # Version 2.2 support
-		if($type =~ /^\d+/)
-		{
-			$type = chr($type);
-		}
-		push(@m,[kTableIndex($meta,$i,0), $type]);
-	}
-	dor0($meta);
-
-	return @m;
+    return @m;
 }
 
-sub Tcol
-{
-	my $self = shift;
-	my $col = shift;
-	return undef unless defined $self->{'COLS'};
-	return undef unless $col >= 0 && $col < $self->{'NUMCOLS'};
-	
-	my $c = kStructi($self->{'COLS'},$col);
-	return k2parray($c);
+sub Tcol {
+    my $self = shift;
+    my $col  = shift;
+    return undef unless defined $self->{'COLS'};
+    return undef unless $col >= 0 && $col < $self->{'NUMCOLS'};
+
+    my $c = kStructi( $self->{'COLS'}, $col );
+    return k2parray($c);
 }
 
-sub Tindex
-{
-	my $self = shift;
-	my $row = shift;
-	my $column = shift;
+sub Tindex {
+    my $self   = shift;
+    my $row    = shift;
+    my $column = shift;
 
-	return undef unless defined $self->{'K'};
-	return undef unless defined $self->{'COLS'};
-	return undef unless $column >= 0 && $column < $self->{'NUMCOLS'};
-	return undef unless $row >= 0 && $row < $self->{'NUMROWS'};
+    return undef unless defined $self->{'K'};
+    return undef unless defined $self->{'COLS'};
+    return undef unless $column >= 0 && $column < $self->{'NUMCOLS'};
+    return undef unless $row >= 0 && $row < $self->{'NUMROWS'};
 
-	return kTableIndex($self->{'K'},$row,$column);
+    return kTableIndex( $self->{'K'}, $row, $column );
 }
 
-sub Trow
-{
-	my $self = shift;
-	my $row = shift;
+sub Trow {
+    my $self = shift;
+    my $row  = shift;
 
-	return undef unless defined $self->{'K'};
-	return undef unless defined $self->{'COLS'};
-	return undef unless $row >= 0 && $row < $self->{'NUMROWS'};
+    return undef unless defined $self->{'K'};
+    return undef unless defined $self->{'COLS'};
+    return undef unless $row >= 0 && $row < $self->{'NUMROWS'};
 
-	my @rtn = ();
-	my $colidx = $self->{'NUMCOLS'} -1;
-	for my $col (0..$colidx)
-	{
-		push(@rtn, kTableIndex($self->{'K'},$row,$col));
-	}
+    my @rtn    = ();
+    my $colidx = $self->{'NUMCOLS'} - 1;
+    for my $col ( 0 .. $colidx ) {
+        push( @rtn, kTableIndex( $self->{'K'}, $row, $col ) );
+    }
 
-	return \@rtn;
+    return \@rtn;
 }
 
-sub Theader
-{
-	my $self = shift;
-	return undef unless defined $self->{'K'};
-	return undef unless defined $self->{'COLS'};
+sub Theader {
+    my $self = shift;
+    return undef unless defined $self->{'K'};
+    return undef unless defined $self->{'COLS'};
 
-	return k2parray(kTableH($self->{'K'}));
+    return k2parray( kTableH( $self->{'K'} ) );
 }
 
 =head2 COMMANDS
@@ -986,79 +926,68 @@ You can run that file by doing this:
 
 =cut
 
-sub do
-{
-	my $self = shift;
-	my $file = shift || return undef;
+sub do {
+    my $self = shift;
+    my $file = shift || return undef;
 
-	my $k;
-	open(F,$file) || return undef;
-	while(<F>)
-	{
-		chomp;
-		$k = k($self->{'kdb'},$_);
-		if($k == 0)
-		{
-			dor0($k); # release memory
-			return undef;
-		}
-		if(kType($k) == -128)
-		{
-			my $err =  k2pscalar0($k);
-			carp "Kx->do error $file $err on line $_\n";
-			return $err;
-		}
-		dor0($k); # release memory
-	}
-	return 1;
+    my $k;
+    open( F, $file ) || return undef;
+    while (<F>) {
+        chomp;
+        $k = k( $self->{'kdb'}, $_ );
+        if ( $k == 0 ) {
+            dor0($k);    # release memory
+            return undef;
+        }
+        if ( kType($k) == -128 ) {
+            my $err = k2pscalar0($k);
+            carp "Kx->do error $file $err on line $_\n";
+            return $err;
+        }
+        dor0($k);        # release memory
+    }
+    return 1;
 }
 
-sub cmd
-{
-	my $self = shift;
-	my $cmd  = shift || return undef;
-	my @arg  = @_;
+sub cmd {
+    my $self = shift;
+    my $cmd  = shift || return undef;
+    my @arg  = @_;
 
-	my $k;
-	if(@arg > 2)
-	{
-		carp "Kx->cmd(self,cmd,arg1,arg2) max extra args is 2, use lists";
-		return undef;
-	}
-	return undef unless defined $self->{'kdb'};
+    my $k;
+    if ( @arg > 2 ) {
+        carp "Kx->cmd(self,cmd,arg1,arg2) max extra args is 2, use lists";
+        return undef;
+    }
+    return undef unless defined $self->{'kdb'};
 
-	if(@arg  == 1)
-	{
-		$k = k1($self->{'kdb'},$cmd,$arg[0]);
-	}
-	elsif(@arg  == 2)
-	{
-		$k = k2($self->{'kdb'},$cmd,$arg[0],$arg[1]);
-	}
-	else
-	{
-		$k = k($self->{'kdb'},$cmd);
-	}
+    if ( @arg == 1 ) {
+        $k = k1( $self->{'kdb'}, $cmd, $arg[0] );
+    }
+    elsif ( @arg == 2 ) {
+        $k = k2( $self->{'kdb'}, $cmd, $arg[0], $arg[1] );
+    }
+    else {
+        $k = k( $self->{'kdb'}, $cmd );
+    }
 
-	if($k == 0)
-	{
-		return undef;
-	}
+    if ( $k == 0 ) {
+        return undef;
+    }
 
-	dor0($self->{'K'}) if defined $self->{'K'}; # release memory
-	$self->{'K'} = $k;
-	_val($k);
+    dor0( $self->{'K'} ) if defined $self->{'K'};    # release memory
+    $self->{'K'} = $k;
+    _val($k);
 }
 
-sub whenever
-{
-	my $self = shift;
-	my $cmd  = shift || return undef;
+sub whenever {
+    my $self = shift;
+    my $cmd = shift || return undef;
 
-	return undef unless defined $self->{'kdb'};
+    return undef unless defined $self->{'kdb'};
 
-	k(-($self->{'kdb'}),$cmd);
-	return undef;
+    k( -( $self->{'kdb'} ), $cmd );
+    return undef;
 }
 
 =head2 ATOMS and STRUCTURES
@@ -1158,109 +1087,99 @@ Example:
 
 # Create an atom in a generic fashion not an OO function call. Creates a
 # K object as its return value
-sub _atom
-{
-	my ($val,$code) = @_;
+sub _atom {
+    my ( $val, $code ) = @_;
 
-	# Check for null
-	return(undef) unless(defined $val);
+    # Check for null
+    return (undef) unless ( defined $val );
 
-	# Default to creating symbols
-	$code = \&ks unless defined $code;
+    # Default to creating symbols
+    $code = \&ks unless defined $code;
 
-	my $k = Kx->new();
-	$k->{'K'} = $code->($val);
-	return $k;
+    my $k = Kx->new();
+    $k->{'K'} = $code->($val);
+    return $k;
 }
 
 # There is very little checking done by this code.
-sub bool   {  _atom($_[1],\&kb);                  }
-sub byte   {  _atom($_[1],\&kg);                  }
-sub short  {  _atom($_[1],\&kh);                  }
-sub int    {  _atom($_[1],\&ki);                  }
-sub long   {  _atom($_[1],\&kj);                  }
-sub real   {  _atom($_[1],\&ke);                  }
-sub float  {  _atom($_[1],\&kf);                  }
-sub char   {  _atom($_[1],\&kc);                  }
-sub sym    {  _atom($_[1],\&ks);                  }
-sub date   {  _atom(ymd($_[1],$_[2],$_[3]),\&kd); }
-sub month  {  _atom($_[1],\&ki);                  }
-sub second {  _atom($_[1],\&ki);                  }
-sub dt     {  _atom(epoch2Z($_[1]),\&kz);         }
-sub tm     {  _atom($_[1],\&kt);                  }
- 
-sub perl2k
-{
-	my $self = shift;
-	my $v    = shift || return undef;
+sub bool  { _atom( $_[1], \&kb ); }
+sub byte  { _atom( $_[1], \&kg ); }
+sub short { _atom( $_[1], \&kh ); }
+sub int   { _atom( $_[1], \&ki ); }
+sub long  { _atom( $_[1], \&kj ); }
+sub real  { _atom( $_[1], \&ke ); }
+sub float { _atom( $_[1], \&kf ); }
+sub char  { _atom( $_[1], \&kc ); }
+sub sym   { _atom( $_[1], \&ks ); }
+sub date { _atom( ymd( $_[1], $_[2], $_[3] ), \&kd ); }
+sub month  { _atom( $_[1],            \&ki ); }
+sub second { _atom( $_[1],            \&ki ); }
+sub dt     { _atom( epoch2Z( $_[1] ), \&kz ); }
+sub tm     { _atom( $_[1],            \&kt ); }
 
-	my $k = Kx->new();
-	if(ref($v))
-	{
-		if(ref($v) eq 'SCALAR' || ref($v) eq 'ARRAY' || ref($v) eq 'HASH')
-		{
-			$k->{'K'} = p2k($v);
-		}
-		else
-		{
-			carp("Kx->perl2k(x): x can only be a ref to scalar, array, hash");
-		}
-	}
-	else
-	{
-		$k->{'K'} = p2k(\$v);
-	}
-	return $k;
+sub perl2k {
+    my $self = shift;
+    my $v = shift || return undef;
+
+    my $k = Kx->new();
+    if ( ref($v) ) {
+        if ( ref($v) eq 'SCALAR' || ref($v) eq 'ARRAY' || ref($v) eq 'HASH' ) {
+            $k->{'K'} = p2k($v);
+        }
+        else {
+            carp("Kx->perl2k(x): x can only be a ref to scalar, array, hash");
+        }
+    }
+    else {
+        $k->{'K'} = p2k( \$v );
+    }
+    return $k;
 }
 
-sub val
-{
-	my $self = shift;
-	return _val($self->{'K'});
+sub val {
+    my $self = shift;
+    return _val( $self->{'K'} );
 }
 
-sub _val
-{
-	my $k = shift;
+sub _val {
+    my $k = shift;
 
-	return undef unless defined $k;
+    return undef unless defined $k;
 
-	my $type = kType($k);
-	if($type == -128) # Its an error
-	{
-		my $err = k2pscalar0($k);
-		carp "K error: $err \n";
-		return $err;
-	}
-	elsif($type >= 0 && $type < KT()) # Its a list
-	{
-		my $ref =  k2parray($k);
+    my $type = kType($k);
+    if ( $type == -128 )    # Its an error
+    {
+        my $err = k2pscalar0($k);
+        carp "K error: $err \n";
+        return $err;
+    }
+    elsif ( $type >= 0 && $type < KT() )    # Its a list
+    {
+        my $ref = k2parray($k);
 
-		# Now if its a list of char vals or a list of bytes then we
-		# convert it to a single string, possibly binary
-		if($type == KG() || $type == KC())
-		{
-			return $ref->[0];
-		}
-		else # default return array ref
-		{
-			return $ref;
-		}
-	}
-	elsif($type < 0 || $type == 98 || $type == 99) # Scalar/Hash etc
-	{
-		return k2p($k);
-	}
-	else # nothing to return so say OK
-	{
-		return 1;
-	}
+        # Now if its a list of char vals or a list of bytes then we
+        # convert it to a single string, possibly binary
+        if ( $type == KG() || $type == KC() ) {
+            return $ref->[0];
+        }
+        else    # default return array ref
+        {
+            return $ref;
+        }
+    }
+    elsif ( $type < 0 || $type == 98 || $type == 99 )    # Scalar/Hash etc
+    {
+        return k2p($k);
+    }
+    else    # nothing to return so say OK
+    {
+        return 1;
+    }
 }
 
-sub kval
-{
-	return undef unless defined $_[0]->{'K'};
-	return $_[0]->{'K'};
+sub kval {
+    return undef unless defined $_[0]->{'K'};
+    return $_[0]->{'K'};
 }
 
 =head2 LISTS
@@ -1383,151 +1302,132 @@ This is handy for creating multiple arguments to a KDB+ function call.
 
 =cut
 
-sub joinatom
-{
-	my $self = shift;
-	my $atom = shift;
-	
-	no warnings;
-	$self->{'K'} = call_ja($self->{'K'},$atom->val);
+sub joinatom {
+    my $self = shift;
+    my $atom = shift;
+
+    no warnings;
+    $self->{'K'} = call_ja( $self->{'K'}, $atom->val );
 }
 
-sub list
-{
-	my $self = shift;
-	return undef unless defined $self->{'K'};
+sub list {
+    my $self = shift;
+    return undef unless defined $self->{'K'};
 
-	return k2parray($self->{'K'});
+    return k2parray( $self->{'K'} );
 }
 
-sub av2k
-{
-	my $self=shift;
-	my ($typ,$aref) = @_;
+sub av2k {
+    my $self = shift;
+    my ( $typ, $aref ) = @_;
 
-	unless(defined $typ && $typ > 0 && $typ < 20)
-	{
-		carp "Kx->av2k(self,x,typ) typ must be @TYP\n";
-		return undef;
-	}
+    unless ( defined $typ && $typ > 0 && $typ < 20 ) {
+        carp "Kx->av2k(self,x,typ) typ must be @TYP\n";
+        return undef;
+    }
 
-	dor0($self->{'K'}) if defined $self->{'K'}; # release memory
+    dor0( $self->{'K'} ) if defined $self->{'K'};    # release memory
 
-	$self->{'K'} = newKarray($typ,$aref);
-	return $self;
+    $self->{'K'} = newKarray( $typ, $aref );
+    return $self;
 }
 
-sub listof
-{
-	my $self=shift;
-	my ($x,$typ) = @_;
+sub listof {
+    my $self = shift;
+    my ( $x, $typ ) = @_;
 
-	if($x <= 0)
-	{
-		carp "Kx->listof(self,x,typ) x=$x less than zero ";
-		return undef;
-	}
-	unless(defined $typ && $typ >= 0 && $typ < 20)
-	{
-		carp "Kx->listof(self,x,typ) typ must be @TYP\n";
-		return undef;
-	}
+    if ( $x <= 0 ) {
+        carp "Kx->listof(self,x,typ) x=$x less than zero ";
+        return undef;
+    }
+    unless ( defined $typ && $typ >= 0 && $typ < 20 ) {
+        carp "Kx->listof(self,x,typ) typ must be @TYP\n";
+        return undef;
+    }
 
-	my $k = Kx->new();
-	$k->{'K'} = ktn($typ,$x);
-	return $k;
+    my $k = Kx->new();
+    $k->{'K'} = ktn( $typ, $x );
+    return $k;
 }
 
-sub getbin
-{
-	my $self=shift;
-	my $ref = getKarraybinary($self->{'K'},0,0);
-	return $ref;
+sub getbin {
+    my $self = shift;
+    my $ref = getKarraybinary( $self->{'K'}, 0, 0 );
+    return $ref;
 }
 
-sub setbin
-{
-	my $self=shift;
-	my ($val) = @_;
+sub setbin {
+    my $self = shift;
+    my ($val) = @_;
 
-	unless(setKarraybinary($self->{'K'},0,$val))
-	{
-		carp "Kx->setbin error in binary copy\n";
-		return 0;
-	}
-	return 1;
+    unless ( setKarraybinary( $self->{'K'}, 0, $val ) ) {
+        carp "Kx->setbin error in binary copy\n";
+        return 0;
+    }
+    return 1;
 }
 
-sub at
-{
-	my $self=shift;
-	my ($x,@val) = @_;
+sub at {
+    my $self = shift;
+    my ( $x, @val ) = @_;
 
-	# What type am I?
-	my $mytype = kType($self->{'K'});
+    # What type am I?
+    my $mytype = kType( $self->{'K'} );
 
-	# I need to be a list
-	unless($mytype >=0)
-	{
-		carp "Can't call Kx->at() on a non list K onject";
-		return undef;
-	}
+    # I need to be a list
+    unless ( $mytype >= 0 ) {
+        carp "Can't call Kx->at() on a non list K onject";
+        return undef;
+    }
 
-	# If it is a set operation
-	if(defined $val[0])
-	{
-		my $k;
+    # If it is a set operation
+    if ( defined $val[0] ) {
+        my $k;
 
-		# Want to store only Kdb+ structure directly or via an object for
-		# mixed lists and scalars for simple lists.
-		# Here we work out where the $k variable will come from
-		if($mytype == 0 && ref($val[0]) eq 'KstructPtr')
-		{
-			$k = $val[0];
-		}
-		elsif($mytype == 0 && ref($val[0]) eq 'Kx')
-		{
-			$k = $val[0]->{'K'};
-		}
-		elsif($mytype > 0 && $#val == 2)   # Assume a date yyyy,mm,dd
-		{
-			$k = ymd(@val);
-		}
-		elsif($mytype > 0)
-		{
-			$k = $val[0];
-		}
-		else
-		{
-			carp "Kx->at(pos,val) Invalid val type for this list type";
-			return undef;
-		}
+        # Want to store only Kdb+ structure directly or via an object for
+        # mixed lists and scalars for simple lists.
+        # Here we work out where the $k variable will come from
+        if ( $mytype == 0 && ref( $val[0] ) eq 'KstructPtr' ) {
+            $k = $val[0];
+        }
+        elsif ( $mytype == 0 && ref( $val[0] ) eq 'Kx' ) {
+            $k = $val[0]->{'K'};
+        }
+        elsif ( $mytype > 0 && $#val == 2 )    # Assume a date yyyy,mm,dd
+        {
+            $k = ymd(@val);
+        }
+        elsif ( $mytype > 0 ) {
+            $k = $val[0];
+        }
+        else {
+            carp "Kx->at(pos,val) Invalid val type for this list type";
+            return undef;
+        }
 
-		# Am I a List of K objects?
-		if( $mytype == 0)
-		{
-			# $k is of type K
-			unless(setKarraymixed($self->{'K'},$x,$k))
-			{
-				carp "Kx->at(pos,val) pos=$x out of bounds? ";
-			}
-			return 0;
-		}
-		else # Simple list
-		{
-			# $k is a Perl scalar
-			unless(setKarraysimple($self->{'K'},$x,$k))
-			{
-				carp "Kx->at(pos,val) type mismatch or pos=$x out of bounds";
-			}
-			return 0;
-		}
-		return undef;
-	}
-	else # A get operation
-	{
-		return getKarray($self->{'K'},$x);
-	}
+        # Am I a List of K objects?
+        if ( $mytype == 0 ) {
+
+            # $k is of type K
+            unless ( setKarraymixed( $self->{'K'}, $x, $k ) ) {
+                carp "Kx->at(pos,val) pos=$x out of bounds? ";
+            }
+            return 0;
+        }
+        else    # Simple list
+        {
+            # $k is a Perl scalar
+            unless ( setKarraysimple( $self->{'K'}, $x, $k ) ) {
+                carp "Kx->at(pos,val) type mismatch or pos=$x out of bounds";
+            }
+            return 0;
+        }
+        return undef;
+    }
+    else        # A get operation
+    {
+        return getKarray( $self->{'K'}, $x );
+    }
 }
 
 =head2 Utility Methods
@@ -1551,134 +1451,114 @@ There is also make_s():
 
 =cut
 
-sub make_s
-{
-    if(!defined $_[0])
-    {
+sub make_s {
+    if ( !defined $_[0] ) {
         return '`';
     }
-	return "`\$\"$_[0]\"";
+    return "`\$\"$_[0]\"";
 }
 
-sub make_C
-{
-    if(!defined $_[0])
-    {
+sub make_C {
+    if ( !defined $_[0] ) {
         return $NULL{'char'};
     }
-    return '"c"$0x' . join('', map { sprintf "%02x", $_ } unpack("C*",$_[0]));
+    return '"c"$0x'
+      . join( '', map { sprintf "%02x", $_ } unpack( "C*", $_[0] ) );
 }
 
-sub make_i
-{
-    if(!defined $_[0])
-    {
+sub make_i {
+    if ( !defined $_[0] ) {
         return $NULL{'int'};
     }
-    return $_[0]+0;
+    return $_[0] + 0;
 }
 
-sub _getepoch
-{
-	if($_[0]  =~ /^now/io)
-	{
-		return time;
-	}
-	elsif($_[0] =~ /^never/io)
-	{
-		return 1999999999;
-	}
-	else
-	{
-		return $_[0];
-	}
+sub _getepoch {
+    if ( $_[0] =~ /^now/io ) {
+        return time;
+    }
+    elsif ( $_[0] =~ /^never/io ) {
+        return 1999999999;
+    }
+    else {
+        return $_[0];
+    }
 }
 
-sub make_z_epoch_gmt
-{
-    if(!defined $_[0])
-    {
+sub make_z_epoch_gmt {
+    if ( !defined $_[0] ) {
         return $NULL{'datetime'};
     }
-    return POSIX::strftime "%Y.%m.%dT%H:%M:%S", gmtime(_getepoch($_[0]));
+    return POSIX::strftime "%Y.%m.%dT%H:%M:%S", gmtime( _getepoch( $_[0] ) );
 }
 
-sub make_z_epoch_local
-{
-    if(!defined $_[0])
-    {
+sub make_z_epoch_local {
+    if ( !defined $_[0] ) {
         return $NULL{'datetime'};
     }
-    return POSIX::strftime "%Y.%m.%dT%H:%M:%S", localtime(_getepoch($_[0]));
+    return POSIX::strftime "%Y.%m.%dT%H:%M:%S", localtime( _getepoch( $_[0] ) );
 }
 
-sub dump0
-{
-	my $self = shift;
+sub dump0 {
+    my $self = shift;
 
-	return undef unless defined $self->{'K'};
-	my $refcnt = kRefCnt($self->{'K'});
-	my $type   = kType($self->{'K'});
-	my $att    = kAtt($self->{'K'});
-	my $num    = kNum($self->{'K'});
-	my $val    = k2pscalar($self->{'K'});
+    return undef unless defined $self->{'K'};
+    my $refcnt = kRefCnt( $self->{'K'} );
+    my $type   = kType( $self->{'K'} );
+    my $att    = kAtt( $self->{'K'} );
+    my $num    = kNum( $self->{'K'} );
+    my $val    = k2pscalar( $self->{'K'} );
 
-	return "{Value: $val, RefCnt=>$refcnt, Type=>$type, Att=>$att, Num=>$num}\n";
-
-}
-
-sub dump
-{
-	my $k = shift;
-
-	return undef unless defined $k;
-
-	my $refcnt = kRefCnt($k);
-	my $type   = kType($k);
-	my $att    = kAtt($k);
-	my $num    = kNum($k);
-	my $val    = k2pscalar($k) || 'no value';
-
-	print "{Value: $val, RefCnt=>$refcnt, Type=>$type, Att=>$att, Num=>$num}\n";
+    return
+      "{Value: $val, RefCnt=>$refcnt, Type=>$type, Att=>$att, Num=>$num}\n";
 
 }
 
-sub DESTROY
-{
-	my $self = shift;
-	my $name = $self->{'name'} || return;
+sub dump {
+    my $k = shift;
 
-	return unless defined $self->{'K'};
-	return unless ref($self->{'K'}) eq 'KstructPtr';
+    return undef unless defined $k;
 
-	dor0($self->{'K'});
+    my $refcnt = kRefCnt($k);
+    my $type   = kType($k);
+    my $att    = kAtt($k);
+    my $num    = kNum($k);
+    my $val    = k2pscalar($k) || 'no value';
 
-	$DB{$name}{'count'}--;
-	if($DB{$name}{'count'} <= 0 && exists $DB{$name}{'kdb'})
-	{
-		POSIX::close($DB{$name}{'kdb'});
-		undef($DB{$name});
-	}
-	undef $self->{'K'};
-	undef $self->{'COLS'};
+    print "{Value: $val, RefCnt=>$refcnt, Type=>$type, Att=>$att, Num=>$num}\n";
+
 }
 
-sub dor0
-{
-	my $k = shift;
-	unless(defined $k)
-	{
-		carp &whowasi;
-		carp "Kx::dor0() must be called with an argument: ";
-	}
-	unless(ref($k) eq 'KstructPtr')
-	{
-		carp &whowasi;
-		carp "Kx::dor0() argument not a KstructPtr: ", ref($k), ": ";
-	}
-	r0($k);
+sub DESTROY {
+    my $self = shift;
+    my $name = $self->{'name'} || return;
+
+    return unless defined $self->{'K'};
+    return unless ref( $self->{'K'} ) eq 'KstructPtr';
+
+    dor0( $self->{'K'} );
+
+    $DB{$name}{'count'}--;
+    if ( $DB{$name}{'count'} <= 0 && exists $DB{$name}{'kdb'} ) {
+        POSIX::close( $DB{$name}{'kdb'} );
+        undef( $DB{$name} );
+    }
+    undef $self->{'K'};
+    undef $self->{'COLS'};
 }
 
+sub dor0 {
+    my $k = shift;
+    unless ( defined $k ) {
+        carp &whowasi;
+        carp "Kx::dor0() must be called with an argument: ";
+    }
+    unless ( ref($k) eq 'KstructPtr' ) {
+        carp &whowasi;
+        carp "Kx::dor0() argument not a KstructPtr: ", ref($k), ": ";
+    }
+    r0($k);
+}
 
 #####################################################################
 #                           K List package                          #
@@ -1735,128 +1615,117 @@ use 5.008;
 use strict;
 use warnings;
 use Carp;
-sub whowasi { (caller(1))[3] . '()' }
+sub whowasi { ( caller(1) )[3] . '()' }
 
-sub TIEARRAY
-{
-	carp &whowasi if $DEBUG;
-	my $class  = shift;
-	my %opts  = @_;
-	my $d;  # list
+sub TIEARRAY {
+    carp &whowasi if $DEBUG;
+    my $class = shift;
+    my %opts  = @_;
+    my $d;    # list
 
-	my $name = $opts{'name'} || 'default';
-	my $ref = {'name' => $name};
-	if(defined $opts{'host'})
-	{
-		$DB{$name}{'host'} = $opts{'host'};
-	}
-	if(defined $opts{'port'})
-	{
-		$DB{$name}{'port'} = $opts{'port'};
-	}
-	if(defined $opts{'list'})
-	{
-		$ref->{'list'} = $opts{'list'};
-	}
-	if(defined $opts{'create'})
-	{
-		$ref->{'create'} = 1;
-	}
-	my $type = $opts{'type'} || 'symbol';
-	$ref->{'type'} = $type;
+    my $name = $opts{'name'} || 'default';
+    my $ref = { 'name' => $name };
+    if ( defined $opts{'host'} ) {
+        $DB{$name}{'host'} = $opts{'host'};
+    }
+    if ( defined $opts{'port'} ) {
+        $DB{$name}{'port'} = $opts{'port'};
+    }
+    if ( defined $opts{'list'} ) {
+        $ref->{'list'} = $opts{'list'};
+    }
+    if ( defined $opts{'create'} ) {
+        $ref->{'create'} = 1;
+    }
+    my $type = $opts{'type'} || 'symbol';
+    $ref->{'type'} = $type;
 
-	return undef unless exists $CAST{$type};
-	return undef unless defined $DB{$name}{'host'} && defined $DB{$name}{'port'};
-	return undef unless defined $ref->{'list'};
+    return undef unless exists $CAST{$type};
+    return undef
+      unless defined $DB{$name}{'host'} && defined $DB{$name}{'port'};
+    return undef unless defined $ref->{'list'};
 
-	# Get hold of any previously defined connection handle
-	if(defined $DB{$name}{'kdb'})
-	{
-		$ref->{'kdb'} = $DB{$name}{'kdb'}; # no need for connect
-		$DB{$name}{'count'}++;
-	}
-	else # get connected a new
-	{
-		if(defined $DB{$name}{'userpass'})
-		{
-			$ref->{'kdb'} = Kx::khpu($DB{$name}{'host'}, 
-										$DB{$name}{'port'},
-										$DB{$name}{'userpass'});
-		}
-		# host, port only
-		else
-		{
-			$ref->{'kdb'} = Kx::khp($DB{$name}{'host'}, $DB{$name}{'port'});
-		}
-		unless($ref->{'kdb'} > 0)
-		{
-			undef $ref->{'kdb'};
-			return undef;
-		}
-		$DB{$name}{'kdb'} = $ref->{'kdb'};
-		$DB{$name}{'count'}++;
-	}
+    # Get hold of any previously defined connection handle
+    if ( defined $DB{$name}{'kdb'} ) {
+        $ref->{'kdb'} = $DB{$name}{'kdb'};    # no need for connect
+        $DB{$name}{'count'}++;
+    }
+    else                                      # get connected a new
+    {
+        if ( defined $DB{$name}{'userpass'} ) {
+            $ref->{'kdb'} = Kx::khpu(
+                $DB{$name}{'host'},
+                $DB{$name}{'port'},
+                $DB{$name}{'userpass'}
+            );
+        }
 
-	# OK check if the variable already exists. If not then create it
-	my $var = Kx::k2parray0(Kx::k($ref->{'kdb'},'\v'));
-	$d = $ref->{'list'};
-	if(!grep(/^$d$/,@$var) || defined $ref->{'create'})
-	{
-		my $r = Kx::k($ref->{'kdb'},"$d:()");
-		if($r == 0)
-		{
-			carp "Undefined K structure in TIELIST\n";
-			return undef;
-		}
-		if(Kx::kType($r) < 0)
-		{
-			carp "Kx::LIST error ", Kx::k2pscalar($r),"\n";
-			return undef;
-		}
-		$ref->{'count'} = 0;
-	}
+        # host, port only
+        else {
+            $ref->{'kdb'} = Kx::khp( $DB{$name}{'host'}, $DB{$name}{'port'} );
+        }
+        unless ( $ref->{'kdb'} > 0 ) {
+            undef $ref->{'kdb'};
+            return undef;
+        }
+        $DB{$name}{'kdb'} = $ref->{'kdb'};
+        $DB{$name}{'count'}++;
+    }
 
+    # OK check if the variable already exists. If not then create it
+    my $var = Kx::k2parray0( Kx::k( $ref->{'kdb'}, '\v' ) );
+    $d = $ref->{'list'};
+    if ( !grep( /^$d$/, @$var ) || defined $ref->{'create'} ) {
+        my $r = Kx::k( $ref->{'kdb'}, "$d:()" );
+        if ( $r == 0 ) {
+            carp "Undefined K structure in TIELIST\n";
+            return undef;
+        }
+        if ( Kx::kType($r) < 0 ) {
+            carp "Kx::LIST error ", Kx::k2pscalar($r), "\n";
+            return undef;
+        }
+        $ref->{'count'} = 0;
+    }
 
-	return bless $ref, $class;
+    return bless $ref, $class;
 }
 
-sub FETCH
-{
-	my $self = shift;
-	my $i    = shift;
+sub FETCH {
+    my $self = shift;
+    my $i    = shift;
 
-	my $list = $self->{'list'};
-	return undef if $i < 0 || $i >= $self->{'count'};
+    my $list = $self->{'list'};
+    return undef if $i < 0 || $i >= $self->{'count'};
 
-	$self->{'val'} = Kx::k2pscalar0(Kx::k($self->{'kdb'},"$list\[$i\]"));
-	return $self->{'val'};
+    $self->{'val'} = Kx::k2pscalar0( Kx::k( $self->{'kdb'}, "$list\[$i\]" ) );
+    return $self->{'val'};
 }
 
-sub STORE
-{
-	my $self = shift;
-	my $i    = shift;
-	my $val  = shift;
-	my $list = $self->{'list'};
+sub STORE {
+    my $self = shift;
+    my $i    = shift;
+    my $val  = shift;
+    my $list = $self->{'list'};
 
-	return undef if $i < 0;
-	$self->EXTEND($i) if $i >= $self->{'count'};
+    return undef if $i < 0;
+    $self->EXTEND($i) if $i >= $self->{'count'};
 
-	# Cast the value
-	$val = $CAST{$self->{'type'}} . $val;
-	$val .= '"' if $self->{'type'} eq 'symbol';
+    # Cast the value
+    $val = $CAST{ $self->{'type'} } . $val;
+    $val .= '"' if $self->{'type'} eq 'symbol';
 
-	$self->{'val'} = Kx::k2pscalar0(Kx::k($self->{'kdb'},"$list\[$i\]:$val"));
-	return $self->{'val'};
+    $self->{'val'} =
+      Kx::k2pscalar0( Kx::k( $self->{'kdb'}, "$list\[$i\]:$val" ) );
+    return $self->{'val'};
 }
 
-sub FETCHSIZE
-{
-	my $self = shift;
-	my $list = $self->{'list'};
+sub FETCHSIZE {
+    my $self = shift;
+    my $list = $self->{'list'};
 
-	$self->{'count'} = Kx::k2pscalar0(Kx::k($self->{'kdb'},"count $list"));
-	return $self->{'count'};
+    $self->{'count'} = Kx::k2pscalar0( Kx::k( $self->{'kdb'}, "count $list" ) );
+    return $self->{'count'};
 }
 
 #   STORESIZE this, count
@@ -1866,156 +1735,141 @@ sub FETCHSIZE
 #	   If the array becomes smaller then entries beyond count should be
 #	   deleted.
 #
-sub STORESIZE
-{
-	my $self  = shift;
-	my $count = shift;
-	my $list  = $self->{'list'};
-	my $oldsz = $self->{'count'};
+sub STORESIZE {
+    my $self  = shift;
+    my $count = shift;
+    my $list  = $self->{'list'};
+    my $oldsz = $self->{'count'};
 
-	my $q = '';
-	if($count < $oldsz)
-	{
-		# Truncate the list
-		$q = "$list:$count#$list";
-	}
-	elsif($count > $oldsz)
-	{
-		my $null = $NULL{$self->{'type'}};
-		my $diff = $count - $oldsz;
-		$q = "$list:$list,$diff#$null";
-	}
-	else
-	{
-		# nothing to do
-	}
+    my $q = '';
+    if ( $count < $oldsz ) {
 
-	my $r = Kx::k($self->{'kdb'},$q);
-	Kx::dor0($r);
+        # Truncate the list
+        $q = "$list:$count#$list";
+    }
+    elsif ( $count > $oldsz ) {
+        my $null = $NULL{ $self->{'type'} };
+        my $diff = $count - $oldsz;
+        $q = "$list:$list,$diff#$null";
+    }
+    else {
+        # nothing to do
+    }
 
-	$self->{'count'} = $count;
+    my $r = Kx::k( $self->{'kdb'}, $q );
+    Kx::dor0($r);
+
+    $self->{'count'} = $count;
 }
 
-sub EXTEND
-{
-	my $self  = shift;
-	my $count = shift;
-	$self->STORESIZE($count);
+sub EXTEND {
+    my $self  = shift;
+    my $count = shift;
+    $self->STORESIZE($count);
 }
 
-sub CLEAR
-{
-	my $self  = shift;
-	my $list  = $self->{'list'};
-	$self->{'count'} = 0;
+sub CLEAR {
+    my $self = shift;
+    my $list = $self->{'list'};
+    $self->{'count'} = 0;
 
-	my $q = "$list:()";
-	my $r = Kx::k($self->{'kdb'},$q);
-	Kx::dor0($r);
+    my $q = "$list:()";
+    my $r = Kx::k( $self->{'kdb'}, $q );
+    Kx::dor0($r);
 }
 
-sub UNTIE
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
-	Kx::DESTROY($self);
+sub UNTIE {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
+    Kx::DESTROY($self);
 }
 
+sub POP {
+    my $self = shift;
+    my $list = $self->{'list'};
 
-sub POP
-{
-	my $self  = shift;
-	my $list  = $self->{'list'};
+    return undef if $self->{'count'} <= 0;
 
-	return undef if $self->{'count'} <= 0;
+    $self->{'count'}--;
 
-	$self->{'count'}--;
+    # Get value
+    my $q = "-1#$list";
+    $self->{'val'} = Kx::k2parray0( Kx::k( $self->{'kdb'}, $q ) );
 
-	# Get value
-	my $q = "-1#$list";
-	$self->{'val'} = Kx::k2parray0(Kx::k($self->{'kdb'},$q));
+    # reduce list
+    $q = "$list:-1_$list";
+    my $r = Kx::k( $self->{'kdb'}, $q );
+    Kx::dor0($r);
 
-	# reduce list
-	$q = "$list:-1_$list";
-	my $r = Kx::k($self->{'kdb'},$q);
-	Kx::dor0($r);
-
-	return $self->{'val'}[0];
+    return $self->{'val'}[0];
 }
 
-sub PUSH
-{
-	my $self  = shift;
-	my @arr   = @_;
-	my $list  = $self->{'list'};
-	my $cast  = $CAST{$self->{'type'}};
+sub PUSH {
+    my $self = shift;
+    my @arr  = @_;
+    my $list = $self->{'list'};
+    my $cast = $CAST{ $self->{'type'} };
 
-	my $issymbol = $self->{'type'} eq 'symbol';
+    my $issymbol = $self->{'type'} eq 'symbol';
 
-	# Do N at a time
-	while(@arr)
-	{
-		my $q = "$list:$list,(";
-		for my $v (splice(@arr,0,500))
-		{
-			$v = $cast . $v;
-			$v .= '"' if $issymbol;
-			$q .= "$v;";
-		}
-		chop($q);
-		$q .= ')';
-		my $r = Kx::k($self->{'kdb'},$q);
-		Kx::dor0($r);
-	}
+    # Do N at a time
+    while (@arr) {
+        my $q = "$list:$list,(";
+        for my $v ( splice( @arr, 0, 500 ) ) {
+            $v = $cast . $v;
+            $v .= '"' if $issymbol;
+            $q .= "$v;";
+        }
+        chop($q);
+        $q .= ')';
+        my $r = Kx::k( $self->{'kdb'}, $q );
+        Kx::dor0($r);
+    }
 
-	return $self->FETCHSIZE();
+    return $self->FETCHSIZE();
 }
 
-sub SHIFT
-{
-	my $self  = shift;
-	my $list  = $self->{'list'};
+sub SHIFT {
+    my $self = shift;
+    my $list = $self->{'list'};
 
-	return undef if $self->{'count'} <= 0;
+    return undef if $self->{'count'} <= 0;
 
-	$self->{'count'}--;
+    $self->{'count'}--;
 
-	my $q = "1#$list";
-	$self->{'val'} = Kx::k2parray0(Kx::k($self->{'kdb'},$q));
-	$q = "$list:1_$list";
-	my $r = Kx::k($self->{'kdb'},$q);
-	Kx::dor0($r);
-	return $self->{'val'}[0];
+    my $q = "1#$list";
+    $self->{'val'} = Kx::k2parray0( Kx::k( $self->{'kdb'}, $q ) );
+    $q = "$list:1_$list";
+    my $r = Kx::k( $self->{'kdb'}, $q );
+    Kx::dor0($r);
+    return $self->{'val'}[0];
 }
 
-sub UNSHIFT
-{
-	my $self  = shift;
-	my @arr   = @_;
-	my $list  = $self->{'list'};
-	my $cast  = $CAST{$self->{'type'}};
+sub UNSHIFT {
+    my $self = shift;
+    my @arr  = @_;
+    my $list = $self->{'list'};
+    my $cast = $CAST{ $self->{'type'} };
 
-	my $issymbol = $self->{'type'} eq 'symbol';
+    my $issymbol = $self->{'type'} eq 'symbol';
 
-	# Do N at a time
-	while(@arr)
-	{
-		my $q = "$list:(";
-		my $len = @arr;
-		$len = 500 if $len > 500;
-		for my $v (splice(@arr,-$len))
-		{
-			$v = $cast . $v;
-			$v .= '"' if $issymbol;
-			$q .= "$v;";
-		}
-		chop($q);
-		$q .= "),$list";
-		my $r = Kx::k($self->{'kdb'},$q);
-		Kx::dor0($r);
-	}
+    # Do N at a time
+    while (@arr) {
+        my $q   = "$list:(";
+        my $len = @arr;
+        $len = 500 if $len > 500;
+        for my $v ( splice( @arr, -$len ) ) {
+            $v = $cast . $v;
+            $v .= '"' if $issymbol;
+            $q .= "$v;";
+        }
+        chop($q);
+        $q .= "),$list";
+        my $r = Kx::k( $self->{'kdb'}, $q );
+        Kx::dor0($r);
+    }
 
-	return $self->FETCHSIZE();
+    return $self->FETCHSIZE();
 }
 
 #   SPLICE this, offset, length, LIST
@@ -2029,90 +1883,84 @@ sub UNSHIFT
 #	   LIST may be empty.
 #
 #	   Returns a list of the original length elements at offset.
-sub SPLICE
-{
-	my $self = shift;
-	my $i    = shift || 0;
-	my $len  = shift || $self->{'count'} - $i;
-	my @arr  = @_;
+sub SPLICE {
+    my $self = shift;
+    my $i    = shift || 0;
+    my $len  = shift || $self->{'count'} - $i;
+    my @arr  = @_;
 
-	my $list  = $self->{'list'};
-	my $count = $self->{'count'};
+    my $list  = $self->{'list'};
+    my $count = $self->{'count'};
 
-	# Sanity check on $i and $len
-	return undef if abs($i) >= $count;
-	return undef if $len <= 0;
-	if($i < 0)
-	{
-		$len = abs($i) if $len > abs($i); # Clamp length if too big
-		$i = $count + $i + 1;
-	}
-	return undef if ($len+$i) > $count;
+    # Sanity check on $i and $len
+    return undef if abs($i) >= $count;
+    return undef if $len <= 0;
+    if ( $i < 0 ) {
+        $len = abs($i) if $len > abs($i);    # Clamp length if too big
+        $i = $count + $i + 1;
+    }
+    return undef if ( $len + $i ) > $count;
 
-	my $q;
+    my $q;
 
-	# First get hold of the old data to return
-	$q = "$list\[(til $len) + $i\]";
-	my $aref = Kx::k2parray0(Kx::k($self->{'kdb'},$q));
+    # First get hold of the old data to return
+    $q = "$list\[(til $len) + $i\]";
+    my $aref = Kx::k2parray0( Kx::k( $self->{'kdb'}, $q ) );
 
-	if(@arr)
-	{
-		# Now add the new stuff
-		$q = "$list\[(til $len) + $i\]:(";
-		my $cast  = $CAST{$self->{'type'}};
+    if (@arr) {
 
-		my $issymbol = $self->{'type'} eq 'symbol';
+        # Now add the new stuff
+        $q = "$list\[(til $len) + $i\]:(";
+        my $cast = $CAST{ $self->{'type'} };
 
-		for(my $j=0; $j < $len && $j <= $#arr; $j++)
-		{
-			my $v = $cast . $arr[$j];
-			$v .= '"' if $issymbol;
-			$q .= "$v;";
-		}
-		chop($q);
-		$q .= ')';
-		my $r = Kx::k($self->{'kdb'},$q);
-		Kx::dor0($r);
-	}
-	else
-	{
-		# delete the slice. from 0 to $i to $j cut the list and join the
-		# front and back bits back together
-		my $j = $i + $len;
-		$q = "$list:raze (0 $i $j\_$list)[0 2]";
-		my $r = Kx::k($self->{'kdb'},$q);
-		Kx::dor0($r);
-	}
-	return @$aref;
+        my $issymbol = $self->{'type'} eq 'symbol';
+
+        for ( my $j = 0 ; $j < $len && $j <= $#arr ; $j++ ) {
+            my $v = $cast . $arr[$j];
+            $v .= '"' if $issymbol;
+            $q .= "$v;";
+        }
+        chop($q);
+        $q .= ')';
+        my $r = Kx::k( $self->{'kdb'}, $q );
+        Kx::dor0($r);
+    }
+    else {
+        # delete the slice. from 0 to $i to $j cut the list and join the
+        # front and back bits back together
+        my $j = $i + $len;
+        $q = "$list:raze (0 $i $j\_$list)[0 2]";
+        my $r = Kx::k( $self->{'kdb'}, $q );
+        Kx::dor0($r);
+    }
+    return @$aref;
 }
 
-sub DELETE
-{
-	my $self = shift;
-	my $i    = shift;
-	my $list = $self->{'list'};
+sub DELETE {
+    my $self = shift;
+    my $i    = shift;
+    my $list = $self->{'list'};
 
-	return undef if $i < 0;
-	$self->EXTEND($i) if $i >= $self->{'count'};
+    return undef if $i < 0;
+    $self->EXTEND($i) if $i >= $self->{'count'};
 
-	# A null value
-	my $val = $NULL{$self->{'type'}};
+    # A null value
+    my $val = $NULL{ $self->{'type'} };
 
-	$self->{'val'} = Kx::k2pscalar0(Kx::k($self->{'kdb'},"$list\[$i\]:$val"));
-	return $self->{'val'};
+    $self->{'val'} =
+      Kx::k2pscalar0( Kx::k( $self->{'kdb'}, "$list\[$i\]:$val" ) );
+    return $self->{'val'};
 }
 
-sub EXISTS
-{
-	my $self = shift;
-	my $i    = shift;
+sub EXISTS {
+    my $self = shift;
+    my $i    = shift;
 
-	return 0 if $i < 0 || $i >= $self->{'count'};
-	my $list = $self->{'list'};
-	my $null = $NULL{$self->{'type'}};
-	return Kx::k2pscalar0(Kx::k($self->{'kdb'},"not $list\[$i\]=$null"));
+    return 0 if $i < 0 || $i >= $self->{'count'};
+    my $list = $self->{'list'};
+    my $null = $NULL{ $self->{'type'} };
+    return Kx::k2pscalar0( Kx::k( $self->{'kdb'}, "not $list\[$i\]=$null" ) );
 }
-
 
 package Kx::HASH;
 #####################################################################
@@ -2164,242 +2012,218 @@ Note: ktype is a Kdb+ type as defined in Types below - it is the
 value type. Only simple types are allowed at the moment.
 
 =cut
+
 use 5.008;
 use strict;
 use warnings;
 use Carp;
-sub whowasi { (caller(1))[3] . '()' }
+sub whowasi { ( caller(1) )[3] . '()' }
 
-sub DESTROY
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
-	dor0($self->{'K'}) if defined $self->{'K'}; # release memory
+sub DESTROY {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
+    dor0( $self->{'K'} ) if defined $self->{'K'};    # release memory
 }
 
-sub TIEHASH
-{
-	carp &whowasi if $DEBUG;
-	my $class  = shift;
-	my %opts  = @_;
-	my $d;  # Dictionary
+sub TIEHASH {
+    carp &whowasi if $DEBUG;
+    my $class = shift;
+    my %opts  = @_;
+    my $d;                                           # Dictionary
 
-	return undef unless defined $opts{'dict'};
+    return undef unless defined $opts{'dict'};
 
-	my $name = 'default';
-	$name = $opts{'name'} if defined $opts{'name'};
+    my $name = 'default';
+    $name = $opts{'name'} if defined $opts{'name'};
 
-	my $ref = {'name' => $name};
-	if(defined $opts{'host'})
-	{
-		$DB{$name}{'host'} = $opts{'host'};
-	}
-	if(defined $opts{'port'})
-	{
-		$DB{$name}{'port'} = $opts{'port'};
-	}
-	if(defined $opts{'check_for_errors'})
-	{
-		$DB{$name}{'check_for_errors'} = $opts{'check_for_errors'};
-	}
+    my $ref = { 'name' => $name };
+    if ( defined $opts{'host'} ) {
+        $DB{$name}{'host'} = $opts{'host'};
+    }
+    if ( defined $opts{'port'} ) {
+        $DB{$name}{'port'} = $opts{'port'};
+    }
+    if ( defined $opts{'check_for_errors'} ) {
+        $DB{$name}{'check_for_errors'} = $opts{'check_for_errors'};
+    }
 
-	if(defined $opts{'dict'})
-	{
-		$ref->{'dict'} = $opts{'dict'};
-	}
-	if(defined $opts{'create'})
-	{
-		$ref->{'create'} = 1;
-	}
-	my $ktype = $opts{'ktype'} || 'symbol';
-	my $vtype = $opts{'vtype'} || 'symbol';
-	$ref->{'ktype'} = $ktype;
-	$ref->{'vtype'} = $vtype;
+    if ( defined $opts{'dict'} ) {
+        $ref->{'dict'} = $opts{'dict'};
+    }
+    if ( defined $opts{'create'} ) {
+        $ref->{'create'} = 1;
+    }
+    my $ktype = $opts{'ktype'} || 'symbol';
+    my $vtype = $opts{'vtype'} || 'symbol';
+    $ref->{'ktype'} = $ktype;
+    $ref->{'vtype'} = $vtype;
 
+    # Get hold of any previously defined connection handle
+    if ( defined $DB{$name}{'kdb'} ) {
+        $ref->{'kdb'} = $DB{$name}{'kdb'};    # no need for connect
+        $DB{$name}{'count'}++;
+    }
+    else                                      # get connected a new
+    {
+        if ( defined $DB{$name}{'userpass'} ) {
+            $ref->{'kdb'} = Kx::khpu(
+                $DB{$name}{'host'},
+                $DB{$name}{'port'},
+                $DB{$name}{'userpass'}
+            );
+        }
 
-	# Get hold of any previously defined connection handle
-	if(defined $DB{$name}{'kdb'})
-	{
-		$ref->{'kdb'} = $DB{$name}{'kdb'}; # no need for connect
-		$DB{$name}{'count'}++;
-	}
-	else # get connected a new
-	{
-		if(defined $DB{$name}{'userpass'})
-		{
-			$ref->{'kdb'} = Kx::khpu($DB{$name}{'host'}, 
-										$DB{$name}{'port'},
-										$DB{$name}{'userpass'});
-		}
-		# host, port only
-		else
-		{
-			$ref->{'kdb'} = Kx::khp($DB{$name}{'host'}, $DB{$name}{'port'});
-		}
-		unless($ref->{'kdb'} > 0)
-		{
-			undef $ref->{'kdb'};
-			return undef;
-		}
-		$DB{$name}{'kdb'} = $ref->{'kdb'};
-		$DB{$name}{'count'}++;
-	}
+        # host, port only
+        else {
+            $ref->{'kdb'} = Kx::khp( $DB{$name}{'host'}, $DB{$name}{'port'} );
+        }
+        unless ( $ref->{'kdb'} > 0 ) {
+            undef $ref->{'kdb'};
+            return undef;
+        }
+        $DB{$name}{'kdb'} = $ref->{'kdb'};
+        $DB{$name}{'count'}++;
+    }
 
-	# OK check if the variable already exists. If not then create it
-	my $var = Kx::k2parray0(Kx::k($ref->{'kdb'},'\v'));
-	$d = $ref->{'dict'};
-	if(!grep(/^$d$/,@$var) || defined $ref->{'create'})
-	{
-		# Need to create it.
-		my $r = Kx::k($ref->{'kdb'},"$d:(`$ktype\$())!`$vtype\$()");
-		if($r == 0)
-		{
-			carp "Undefined K structure in TIEHASH\n";
-			return undef;
-		}
-		if(Kx::kType($r) < 0)
-		{
-			carp "K error ", Kx::k2pscalar($r),"\n";
-			return undef;
-		}
-	}
+    # OK check if the variable already exists. If not then create it
+    my $var = Kx::k2parray0( Kx::k( $ref->{'kdb'}, '\v' ) );
+    $d = $ref->{'dict'};
+    if ( !grep( /^$d$/, @$var ) || defined $ref->{'create'} ) {
 
+        # Need to create it.
+        my $r = Kx::k( $ref->{'kdb'}, "$d:(`$ktype\$())!`$vtype\$()" );
+        if ( $r == 0 ) {
+            carp "Undefined K structure in TIEHASH\n";
+            return undef;
+        }
+        if ( Kx::kType($r) < 0 ) {
+            carp "K error ", Kx::k2pscalar($r), "\n";
+            return undef;
+        }
+    }
 
-	return bless $ref, $class;
+    return bless $ref, $class;
 }
 
-sub FETCH
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
-	my $key  = shift;
+sub FETCH {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
+    my $key  = shift;
 
-	my $dict = $self->{'dict'};
-	my $ktype = $self->{'ktype'};
+    my $dict  = $self->{'dict'};
+    my $ktype = $self->{'ktype'};
 
-	# Cast key to right type
-	$key = $CAST{$ktype} . $key;
-	$key .= '"' if $ktype eq 'symbol';
-	$self->{'val'} = Kx::k2pscalar0(Kx::k($self->{'kdb'},"$dict $key"));
-	return $self->{'val'};
+    # Cast key to right type
+    $key = $CAST{$ktype} . $key;
+    $key .= '"' if $ktype eq 'symbol';
+    $self->{'val'} = Kx::k2pscalar0( Kx::k( $self->{'kdb'}, "$dict $key" ) );
+    return $self->{'val'};
 }
 
-sub STORE
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
-	my $key  = shift;
-	my $val  = shift;
+sub STORE {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
+    my $key  = shift;
+    my $val  = shift;
 
-	my $dict  = $self->{'dict'};
-	my $ktype = $self->{'ktype'};
-	my $vtype = $self->{'vtype'};
+    my $dict  = $self->{'dict'};
+    my $ktype = $self->{'ktype'};
+    my $vtype = $self->{'vtype'};
 
-	# Cast key and value to right type
-	if($ktype eq "symbol")
-	{
-		$key = '`$"'.$key.'"';
-	}
-	else
-	{
-		$key = $CAST{$ktype} . $key;
-	}
-	if($vtype eq "symbol")
-	{
-		$val = '`$"'.$val.'"';
-	}
-	else
-	{
-		$val = $CAST{$vtype} . $val;
-	}
-	my $r = Kx::k($self->{'kdb'},"$dict"."[$key]:$val");
-	Kx::dor0($r);
-	return;
+    # Cast key and value to right type
+    if ( $ktype eq "symbol" ) {
+        $key = '`$"' . $key . '"';
+    }
+    else {
+        $key = $CAST{$ktype} . $key;
+    }
+    if ( $vtype eq "symbol" ) {
+        $val = '`$"' . $val . '"';
+    }
+    else {
+        $val = $CAST{$vtype} . $val;
+    }
+    my $r = Kx::k( $self->{'kdb'}, "$dict" . "[$key]:$val" );
+    Kx::dor0($r);
+    return;
 }
 
-sub DELETE
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
-	my $key  = shift;
+sub DELETE {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
+    my $key  = shift;
 
-	my $dict = $self->{'dict'};
-	$self->{'K'}  = Kx::k($self->{'kdb'},".[`$dict;();_;$key]");
-	Kx::dor0($self->{'K'});
-	return 1;
+    my $dict = $self->{'dict'};
+    $self->{'K'} = Kx::k( $self->{'kdb'}, ".[`$dict;();_;$key]" );
+    Kx::dor0( $self->{'K'} );
+    return 1;
 }
 
-sub CLEAR
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
+sub CLEAR {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
 
-	my $d = $self->{'dict'};
-	my $ktype = $self->{'ktype'};
-	my $vtype = $self->{'vtype'};
+    my $d     = $self->{'dict'};
+    my $ktype = $self->{'ktype'};
+    my $vtype = $self->{'vtype'};
 
-	my $r = Kx::k($self->{'kdb'},"$d:(`$ktype\$())!`$vtype\$()");
-	Kx::dor0($r);
-	return 1;
+    my $r = Kx::k( $self->{'kdb'}, "$d:(`$ktype\$())!`$vtype\$()" );
+    Kx::dor0($r);
+    return 1;
 }
 
-sub EXISTS
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
-	my $key  = shift;
+sub EXISTS {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
+    my $key  = shift;
 
-	my $dict = $self->{'dict'};
-	my $ktype = $self->{'ktype'};
+    my $dict  = $self->{'dict'};
+    my $ktype = $self->{'ktype'};
 
-	# Cast key to right type
-	$key = $CAST{$ktype} . $key;
-	$key .= '"' if $ktype eq 'symbol';
-	my $null = $NULL{$self->{'vtype'}};
-	$self->{'K'}  = Kx::k($self->{'kdb'},"not $dict"."[$key]=$null");
-	return Kx::k2pscalar0($self->{'K'});
+    # Cast key to right type
+    $key = $CAST{$ktype} . $key;
+    $key .= '"' if $ktype eq 'symbol';
+    my $null = $NULL{ $self->{'vtype'} };
+    $self->{'K'} = Kx::k( $self->{'kdb'}, "not $dict" . "[$key]=$null" );
+    return Kx::k2pscalar0( $self->{'K'} );
 }
 
-sub FIRSTKEY
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
+sub FIRSTKEY {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
 
-	my $dict = $self->{'dict'};
-	$self->{'i'} = 0;
-	$self->{'count'}  = Kx::k2pscalar0(Kx::k($self->{'kdb'},"count $dict"));
-	$self->{'K'}  = Kx::k($self->{'kdb'},"(key $dict)[0]");
-	return Kx::k2pscalar0($self->{'K'});
+    my $dict = $self->{'dict'};
+    $self->{'i'}     = 0;
+    $self->{'count'} = Kx::k2pscalar0( Kx::k( $self->{'kdb'}, "count $dict" ) );
+    $self->{'K'}     = Kx::k( $self->{'kdb'}, "(key $dict)[0]" );
+    return Kx::k2pscalar0( $self->{'K'} );
 }
 
-sub NEXTKEY
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
+sub NEXTKEY {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
 
-	my $dict = $self->{'dict'};
-	$self->{'i'}++;
-	return undef if $self->{'i'} >= $self->{'count'};
+    my $dict = $self->{'dict'};
+    $self->{'i'}++;
+    return undef if $self->{'i'} >= $self->{'count'};
 
-	my $i = $self->{'i'};
-	$self->{'K'}  = Kx::k($self->{'kdb'},"(key $dict)[$i]");
-	return Kx::k2pscalar0($self->{'K'});
+    my $i = $self->{'i'};
+    $self->{'K'} = Kx::k( $self->{'kdb'}, "(key $dict)[$i]" );
+    return Kx::k2pscalar0( $self->{'K'} );
 }
 
-sub SCALAR
-{
-	carp &whowasi if $DEBUG;
-	my $self = shift;
+sub SCALAR {
+    carp &whowasi if $DEBUG;
+    my $self = shift;
 
-	my $dict = $self->{'dict'};
-	$self->{'K'}  = Kx::k($self->{'kdb'},"count $dict");
-	return Kx::k2pscalar0($self->{'K'});
+    my $dict = $self->{'dict'};
+    $self->{'K'} = Kx::k( $self->{'kdb'}, "count $dict" );
+    return Kx::k2pscalar0( $self->{'K'} );
 }
 
-sub UNTIE
-{
-	my $self = shift;
-	Kx::DESTROY($self);
+sub UNTIE {
+    my $self = shift;
+    Kx::DESTROY($self);
 }
 
 package Kx;

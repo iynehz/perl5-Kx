@@ -808,7 +808,7 @@ parray2k(AV * av)
 	}
 
 	// OK now we know what sort of K list to create
-	if(mixed || typ == SVt_RV)
+	if(mixed || SvROK(*svp))
 	{
 		K kv = ktn(0,len+1);
 		for(i=0; i <= len; i++)
@@ -816,15 +816,15 @@ parray2k(AV * av)
 			svp = av_fetch(av,i,0);
 			typ = SvTYPE(*svp);
 
-			if(SCALAR(typ))
+			if(!SvROK(*svp) && SCALAR(typ))
 			{
 				kK(kv)[i] = pscalar2k(*svp);
 			}
-			else if(typ == SVt_RV && SvTYPE(SvRV(*svp)) == SVt_PVAV) // array
+			else if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVAV) // array
 			{
 				kK(kv)[i] = parray2k((AV*) SvRV(*svp));
 			}
-			else if(typ == SVt_RV && SvTYPE(SvRV(*svp)) == SVt_PVHV) // hash
+			else if(SvROK(*svp) && SvTYPE(SvRV(*svp)) == SVt_PVHV) // hash
 			{
 				kK(kv)[i] = phash2k((HV*) SvRV(*svp));
 			}
@@ -920,7 +920,7 @@ phash2k(HV * h)
 		typ = SvTYPE(sv);
 
 		// If we have a reference then we need to dereference it
-		while(typ == SVt_RV)
+		while(SvROK(sv))
 		{
 			typ = SvTYPE(SvRV(sv)); //  underlying typ
 			sv  = SvRV(sv);         //  dereference

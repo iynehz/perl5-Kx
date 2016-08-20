@@ -8,7 +8,7 @@ license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: '1.4'
-version: 0.039
+version: 0.040_001
 configure_requires:
   'ExtUtils::MakeMaker': '0'
 requires:

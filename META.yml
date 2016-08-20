@@ -1,10 +1,19 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Kx
-version:      0.039
-version_from: lib/Kx.pm
-installdirs:  site
+---
+name: Kx
+abstract: 'Perl extension for Kdb+ http://kx.com'
+author:
+  - 'Mark Pfeiffer <markpf@mlp-consulting.com.au>'
+  - 'Stephan Loyd <stephanloyd9@gmail.com>'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: '1.4'
+version: 0.039
+configure_requires:
+  'ExtUtils::MakeMaker': '0'
 requires:
+  perl: '5.008'
+resources:
+  license: http://dev.perl.org/licenses/
+  repository: https://github.com/stphnlyd/perl5-Kx.git
 
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30

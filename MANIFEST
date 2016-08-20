@@ -6,18 +6,16 @@ MANIFEST
 ppport.h
 README
 typemap
-t/Kx.t
+t/00basic.t
+t/01Kx.t
+t/99pod.t
 t/t.1
 t/t.2
 t/t.3
 t/t.4
 t/t.5
 t/t.6
-fallback/const-c.inc
-fallback/const-xs.inc
 lib/Kx.pm
 accessors-c.inc
 accessors-xs.inc
-const-c.inc
-const-xs.inc
 META.yml                                 Module meta-data (added by MakeMaker)

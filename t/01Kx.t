@@ -1,42 +1,12 @@
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl Kx.t'
-
-#########################
-
-# change 'tests => 2' to 'tests => last_test_to_print';
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
 
-use Test::More tests => 71;
+use Test::More tests => 69;
 
-#use Test::More qw(no_plan);
 use Data::Dumper;
-BEGIN { use_ok('Kx') }
-
-my $fail = 0;
-foreach my $constname (
-    qw(
-    KC KD KE KF KG KH KI KJ KM KS KT KU KV KZ XD XT)
-  )
-{
-    no strict 'refs';
-    next if ( eval "my \$a = 'Kx::$constname'->(); 1" );
-    if ( $@ =~ /^Your vendor has not defined Kx macro $constname/ ) {
-        print "# pass: $@";
-    }
-    else {
-        print "# fail: $@";
-        $fail = 1;
-    }
-
-}
-
-ok( $fail == 0, 'Constants' );
-#########################
-
-# Insert your test code below, the Test::More module is use()ed here so read
-# its man page ( perldoc Test::More ) for help writing this test script.
+use Kx;
 
 #my $k = new Kx(host=>"localhost", port=>2080);
 #my $k = new Kx(host=>"localhost", port=>2222, 'userpass' => 'markpf:letmein', check_for_errors=>1);

@@ -1,5 +1,11 @@
 Revision history for Perl extension Kx.
 
+0.040_001 - 2016-08-20
+  - Fixed RT#79562: Random strings in fetching array from Kdb
+  - Always use SvROK() macro to test RV. Since Perl 5.12 SVt_RV has merged
+    with SVt_IV, and using SVt_RV for testing RV may break in some cases.
+  - Use lastest k.h that supports Kdb+ version 3
+
 0.039 - 2009-03-24
   - added better datetime support Kx::__Z2epoch()
 

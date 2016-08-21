@@ -106,7 +106,7 @@ $d = $k->sym('mysymbol');    # A Kdb+ symbol
 is( $d->val, 'mysymbol', "Symbol" );
 
 $d = $k->date( 2007, 4, 22 );    # integer encoded date year, month, day
-my @time = localtime( $d->val );
+my @time = gmtime( $d->val );
 $time[5] += 1900;
 $time[4]++;
 is( $time[5] . $time[4] . $time[3], "2007422", "Date" );
@@ -144,7 +144,7 @@ $l = $k->listof( $size, Kx::KD() );
 for ( my $i = 0 ; $i < $size ; $i++ ) {
     $l->at( $i, 2007, 4, $i + 1 );    # 20070401 -> 20070420
 }
-@time = localtime( $l->at(19) );
+@time = gmtime( $l->at(19) );
 $time[5] += 1900;
 $time[4]++;
 is( $time[5] . $time[4] . $time[3], "2007420", "Date list" );
@@ -152,7 +152,7 @@ is( $time[5] . $time[4] . $time[3], "2007420", "Date list" );
 # Add an extra date to the end of the list
 $l->joinatom( $k->date( 2007, 4, 30 ) );
 $perl_list = $l->list();
-@time      = localtime( $l->at($size) );
+@time      = gmtime( $l->at($size) );
 $time[5] += 1900;
 $time[4]++;
 is( $time[5] . $time[4] . $time[3], "2007430", "Add Date to list" );

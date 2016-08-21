@@ -1,5 +1,8 @@
 Revision history for Perl extension Kx.
 
+0.040_002 - 2016-08-21
+  - Fixed RT#31933: possible issue with dates
+
 0.040_001 - 2016-08-20
   - New co-maintainer: Stephan Loyd
   - Fixed RT#79562: Random strings in fetching array from Kdb.

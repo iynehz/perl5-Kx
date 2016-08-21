@@ -74,7 +74,21 @@ Kx - Perl extension for Kdb+ http://kx.com
 
 =head1 SYNOPSIS
 
-  use Kx;
+    use Kx;
+
+    my $k = Kx->new(host=>'localhost', port=>2222);
+    $k->connect() or die "Can't connect to Kdb+ server";
+
+    my $rtn = $k->cmd('til 8');
+    my $sum = $k->cmd('{x+y}', $k->int(5)->kval, $k->int(7)->kval);
+
+    my $lst = $k->listof(5, Kx::KI());
+    for (0 .. 4) {
+        $lst->at($_, $_);
+    }
+    my $ktyp = Kx::kType($lst->kval);
+    my $lst_perl = $lst->val;
+
 
 =head1 DESCRIPTION
 
@@ -91,9 +105,9 @@ None by default.
 
 =head2 New
 
-    $k = Kx->new(name=>'local22', host=>'localhost', port=>2222);
+    my $k = Kx->new(name=>'local22', host=>'localhost', port=>2222);
 
-Create a new K object. Set the connection paramaters to conect to 'host'
+Create a new Kx object. Set the connection paramaters to conect to 'host'
 and 'port' as specified.
 
 No connection is made to the server until you call $k->connect()
@@ -104,18 +118,18 @@ to new() will use the same 'default' connection.
 So once you make a connection later calls to new() with the same name
 will use the same connection without further connect() calls required.
 
-    $k = new K host=>'localhost', port=>2222;
-    $k->connect();  # defaults to default;
+    my $k = Kx->new(host=>'localhost', port=>2222);
+    $k->connect() or die "Can't connect to Kdb+ server";
 
     # picks up previous default connection to localhost port 2222 and
     # will use it as well.
-    $k1 = new K;
+    my $k1 = Kx->new();
 
 Also username and passwords are supported. Just add the userpass
 attribute thus:
 
     $k = Kx->new(name=>'local22', 
-	             host=>'localhost', 
+                 host=>'localhost', 
                  port=>2222,
                  userpass=>'user:pass');
 
@@ -156,17 +170,15 @@ sub new {
 
 To connect to the 'default' server.
 
-  unless($k->connect())
-  {
-    warn "Can't connect to Kdb+ server\n";
-  }
+    unless($k->connect()) {
+        warn "Can't connect to Kdb+ server\n";
+    }
 
 To connect to a defined server say 'local22'
 
-  unless($k->connect('local22'))
-  {
-    warn "Can't connect to local22 Kdb+ server\n";
-  }
+    unless($k->connect('local22')) {
+        warn "Can't connect to local22 Kdb+ server\n";
+    }
  
 =cut
 
@@ -231,7 +243,7 @@ If you make changes that effects these environmental details then call
 the env() method to update what is known. This module doesn't continually
 hassle the server for these details.
 
-    @details = $k->env;       # Get the environment from the server
+    my @details = $k->env;  # Get the environment from the server
 
     $details[0] => [ tables     ]
     $details[1] => [ funcs      ]
@@ -885,10 +897,10 @@ The cmd() method also allows up to two extra arguments that are normally
 K objects. You normally call cmd() this way when you have a function to
 call. Here is a dodgy example.
 
-    my $data = $k->listof(length($arrsym),Kx::KG());  # list of length bytes
+    my $data = $k->listof(length($arrsym), Kx::KG());  # list of bytes
     $data->setbin($arrsym);
 
-    $result = $k->cmd('{[x]insert[`mytab](0;x;.z.z)}',$data->val);
+    $result = $k->cmd('{[x]insert[`mytab](0;x;.z.z)}', $data->kval);
 
 The cmd() function will return a reference to an array if the Q command
 returns a list. It will return a simple scalar if the result is a scalar
@@ -994,8 +1006,6 @@ sub whenever {
 
 To create Kdb+ atoms locally in RAM use the following calls.
 
-    $k = new K;
-
     my $d;
     $d=$k->bool(0);           # boolean
     $d=$k->byte(100);         # char
@@ -1024,12 +1034,11 @@ To get a Perl value back from a Kdb+ atom try this;
 
 To get the internal value back from a Kdb+ atom try this;
 
-    my $val = $k->kval;  # used in $x->cmd('func',$val)
+    my $kval = $k->kval;  # used in $x->cmd('func', $kval)
 
 As a further comment on the date() method. When you look at the value
 retuned from a date() call it is in epoch seconds.
 
-    $k = new K;
     my $date = $k->date(2007,4,22);
     print scalar localtime($date->val),"\n";
 
@@ -1040,9 +1049,9 @@ are returned from KDB+ back into Perl data structures. By default a
 conversion to epoch seconds will be made. You can also get epoch seconds
 with milliseconds and you can also turn off conversion all together.
 
-   Kx::__Z2epoch(0);   # turn off epoch conversion
-   Kx::__Z2epoch(1);   # turn on epoch conversion (default)
-   Kx::__Z2epoch(2);   # turn on epoch conversion plus milliseconds
+    Kx::__Z2epoch(0);   # turn off epoch conversion
+    Kx::__Z2epoch(1);   # turn on epoch conversion (default)
+    Kx::__Z2epoch(2);   # turn on epoch conversion plus milliseconds
 
 These have immediate effects on how datetimes are converted into Perl
 data structures. These do not effect what is held in RAM after a call to
@@ -1078,10 +1087,9 @@ completeness and so you can use them if you really want. But don't.
 
 Example:
 
-   # Simple create
-   my $k    = new K;
-   my $bool = $k->bool(0);
-   print "My boolean in K is ",$bool->val,"\n";
+    # Simple create
+    my $bool = $k->bool(0);
+    print "My boolean in K is ",$bool->val,"\n";
 
 =cut
 
@@ -1209,7 +1217,6 @@ of:
 
 Example simple lists:
 
-    my $k = new K;
     my $list = $k->listof(20,Kx::KS());      # List of 20 symbols
     for( my $i=0; $i < 20; $i++)
     {
@@ -1238,24 +1245,22 @@ data into a list of bytes. You can use this to save serialised Perl
 data structures into Kdb+ tables (much like a blob or text field in SQL
 DBs).  Here is an example:
 
-    use K;
+    use Kx;
     use Compress::Zlib qw/compress uncompress/;
     use Data::Dumper;
     $Data::Dumper::Indent = 0; # no newlines, important
     
-    my $k = new K(host=>"localhost", port=>2222, check_for_errors=>1);
-    my $rv = $k->connect;
-    die "Can't connect to KDB+ " unless $rv;
+    my $k = Kx->new(host=>"localhost", port=>2222, check_for_errors=>1);
+    $k->connect() or die "Can't connect to Kdb+ server";
     
     # create new table in q
     $k->Tnew(name=>'mytab',cols=>[qw/id data ts/]);
     
     # Build a large complicated Perl structure.
     my $arr = { a=>['a','b','c',1,2,3], b=>'this is a test'};
-    for (0..10000)
-    {
-            $arr->{$_} = {$_ => $_};
-            $arr->{"a$_"} = [$_, $_];
+    for (0..10000) {
+        $arr->{$_} = {$_ => $_};
+        $arr->{"a$_"} = [$_, $_];
     }
     
     # Serialise it as a compressed piece of data
@@ -1293,7 +1298,7 @@ lists. No lists of list only lists of simple atoms of mixed type
     my $list = $k->listof(40,0); # mixed list 40 elements
     $list->at(0,$k->float(22.22));
 
-    $list->at(1,$k->symbol('this is a test'));
+    $list->at(1,$k->sym('this is a test'));
     .
     .
     $list->at(39,$k->date(2007,2,28));
@@ -1578,7 +1583,7 @@ sub dor0 {
 You may wish to tie a Perl array to a Kdb+ variable. Well, you can do
 that as well. Try something like this:
 
-    use K;
+    use Kx;
     
     my %config = (
         host=>"localhost",
@@ -1972,7 +1977,7 @@ package Kx::HASH;
 You may wish to tie a Perl hash to a Kdb+ variable. Well, you can do
 that as well. Try something like this:
 
-    use K;
+    use Kx;
 
     my %config = (
             host=>"localhost",
@@ -1986,22 +1991,19 @@ that as well. Try something like this:
     tie(%x, 'Kx::HASH', %config);
     
     print "Size of hash x is :". scalar %x ."\n";
-    for(0..5)
-    {
-            $x{"a$_"} = $_;
+    for(0..5) {
+        $x{"a$_"} = $_;
     }
     
     %y = %x;
     
-    for(0..5)
-    {
-            print $y{"a$_"}," " if exists $y{"a$_"};
+    for(0..5) {
+        print $y{"a$_"}," " if exists $y{"a$_"};
     }
     print "\n";
     
-    while(($k,$v) = each %x)
-    {
-            print "Key=>$k is $v\n";
+    while(($k,$v) = each %x) {
+        print "Key=>$k is $v\n";
     }
     untie(%x);
 

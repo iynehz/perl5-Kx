@@ -2233,6 +2233,7 @@ package Kx;
 # Autoload methods go after =cut, and are processed by the autosplit program.
 
 1;
+
 __END__
 
 =head1 SEE ALSO
@@ -2244,9 +2245,19 @@ http://code.kx.com
 See the test code under the 't' directory of this module for more details
 on how to call each method.
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Mark Pfeiffer, E<lt>markpf at mlp-consulting dot com dot auE<gt>
+=over 4
+
+=item *
+
+Mark Pfeiffer, <markpf@mlp-consulting.com.au>
+
+=item *
+
+Stephan Loyd, <stephanloyd9@gmail.com>
+
+=back
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -2267,6 +2278,8 @@ the like. Your kms may vary.
 If this code is useful then please drop me a line and let me know. I
 would also like to be acknowledged in any products you may make from
 this. I get a bit of a buzz out of it.
+
+The F<LICENSE> file in the package is the Perl 5 license.
 
 =head1 BUGS
 

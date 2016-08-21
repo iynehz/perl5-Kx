@@ -600,9 +600,10 @@ http://code.kx.com
 See the test code under the 't' directory of this module for more details
 on how to call each method.
 
-# AUTHOR
+# AUTHORS
 
-Mark Pfeiffer, &lt;markpf at mlp-consulting dot com dot au>
+- Mark Pfeiffer, <markpf@mlp-consulting.com.au>
+- Stephan Loyd, <stephanloyd9@gmail.com>
 
 # COPYRIGHT AND LICENSE
 
@@ -623,6 +624,8 @@ the like. Your kms may vary.
 If this code is useful then please drop me a line and let me know. I
 would also like to be acknowledged in any products you may make from
 this. I get a bit of a buzz out of it.
+
+The `LICENSE` file in the package is the Perl 5 license.
 
 # BUGS
 

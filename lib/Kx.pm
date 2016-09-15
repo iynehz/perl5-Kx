@@ -1291,9 +1291,6 @@ DBs).  Here is an example:
 
 =head2 Mixed Lists
 
-We only handle straight lists. By that I mean single dimensional mixed
-lists. No lists of list only lists of simple atoms of mixed type
-
     # The zero in line below says its to be a mixed list
     my $list = $k->listof(40,0); # mixed list 40 elements
     $list->at(0,$k->float(22.22));

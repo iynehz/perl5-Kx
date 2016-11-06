@@ -8,8 +8,6 @@ use POSIX ();
 
 my $DEBUG = 0;
 
-$Kx::VERSION = '0.042';
-
 my %NULL = (
     'symbol'   => '`',
     'short'    => "0Nh",

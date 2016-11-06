@@ -23,7 +23,9 @@ same path as the package source.
 or
     libtool -static -o libkdb.a c.o
 
-For make test to actually do anything, you need to have a 'q' process running on port 2222.
+For make test to actually do anything, you need to have a 'q' process
+running on localhost port 2222 (or other port specified by environment
+variable C<KX_PORT>).
 
     q -p 2222
 

@@ -10,7 +10,8 @@ use Kx;
 
 #my $k = new Kx(host=>"localhost", port=>2080);
 #my $k = new Kx(host=>"localhost", port=>2222, 'userpass' => 'markpf:letmein', check_for_errors=>1);
-my $k = new Kx( host => "localhost", port => 2222, check_for_errors => 1 );
+my $kx_port = $ENV{KX_PORT} || 2222;
+my $k = new Kx( host => "localhost", port => $kx_port, check_for_errors => 1 );
 ok( defined $k, 'New' );
 
 my $rv = $k->connect;

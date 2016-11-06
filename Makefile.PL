@@ -22,7 +22,9 @@ or
 
 perl Makefile.PL
 make
-make test     # you must have a 'q' process running on port 2222 (q -p 2222)
+# You must have a 'q' process running on localhost port 2222 (q -p 2222,
+# or in q console \\p 2222), or other port via environment variable KX_PORT
+make test     
 make install
 
 ";

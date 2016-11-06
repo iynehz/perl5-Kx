@@ -1192,6 +1192,8 @@ sub kval {
 
 =head2 LISTS
 
+=head3 Simple Lists
+
 These list functions create in memory local lists outside of any 'q'
 running process. These will allow you to create very large simple lists
 without blowing out all your memory.
@@ -1288,8 +1290,7 @@ DBs).  Here is an example:
     eval $arrsym;
     print $VAR1->{'b'},"\n";
 
-
-=head2 Mixed Lists
+=head3 Mixed Lists
 
     # The zero in line below says its to be a mixed list
     my $list = $k->listof(40,0); # mixed list 40 elements
@@ -2250,11 +2251,11 @@ on how to call each method.
 
 =item *
 
-Mark Pfeiffer, <markpf@mlp-consulting.com.au>
+Mark Pfeiffer <markpf@mlp-consulting.com.au>
 
 =item *
 
-Stephan Loyd, <stephanloyd9@gmail.com>
+Stephan Loyd <stephanloyd9@gmail.com>
 
 =back
 

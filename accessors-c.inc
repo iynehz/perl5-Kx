@@ -31,9 +31,11 @@ days since 2000.01.01
 	// return 86400*(datetime+10957);
 	// return epoch/8.64e4-10957;
 */
+#define KX2UNIX_EPOCH 10957
+
 double epoch2Z(int epoch)
 {
-	double datetime =  epoch/8.64e4-10957;
+	double datetime =  epoch/8.64e4 - KX2UNIX_EPOCH;
 	// fprintf(stderr,"epoch2Z: %d -> %g\n",epoch,datetime);
 	return(datetime);
 }
@@ -46,8 +48,7 @@ double Z2epochf(double datetime)
 		return datetime;
 	
 	// days * secs in day + secs to 1/1/2000
-	// epoch = ((int) datetime) * 86400 + 946645200;
-	epoch = ((int) datetime +10957) * 86400;
+	epoch = ((int) datetime + KX2UNIX_EPOCH) * 86400;
 
 	// now get hours added in
 	// fraction of datetime * seconds in day / seconds in hour
@@ -73,7 +74,6 @@ double Z2epochf(double datetime)
 
 int Z2epoch(double datetime)
 {
-	//int epoch =  86400*(datetime+10957);
 	int epoch =  Z2epochf(datetime);
 	// fprintf(stderr,"Z2epoch: %g -> %d\n",datetime,epoch);
 	return(epoch);
@@ -81,7 +81,7 @@ int Z2epoch(double datetime)
 
 int D2epoch(double datetime)
 {
-	int epoch =  86400*(datetime+10957);
+	int epoch =  86400*(datetime + KX2UNIX_EPOCH);
 	// fprintf(stderr,"D2epoch: %g -> %d\n",datetime,epoch);
 	return(epoch);
 }
@@ -275,6 +275,7 @@ kTableNumCols (Kstruct * x) {
 	return(vals->n);
 };
 
+static SV* klistelem2p(Kstruct* lst, int idx, H typ);
 
 /* Return the value found at index(row,col) */
 SV * k2p (Kstruct * );
@@ -288,31 +289,37 @@ kTableIndex (Kstruct * x, int row, int col) {
 
 	chdr = kK(vals)[col];   // the head of this column
 	ctyp = chdr->t;         // this columns type
-	if(ctyp > 0 )
-	{
-		switch(ctyp)
-		{
-			  CS(KB,return newSViv(kG(chdr)[row]))
-			  CS(KG,return newSViv(kG(chdr)[row]))
-			  CS(KH,return newSViv(kH(chdr)[row]))
-			  CS(KI,return newSViv(kI(chdr)[row]))
-			  CS(KE,return newSVnv((double)kE(chdr)[row]))
-			  CS(KF,return newSVnv((double)kF(chdr)[row]))
-			  CS(KJ,return newSVnv((double)kJ(chdr)[row]))
-			  CS(KC,return newSViv(kC(chdr)[row]))
-			  CS(KS,return newSVpv((const char*)kS(chdr)[row],0))
-			  CS(KM,return newSViv(kI(chdr)[row]))
-			  CS(KD,return newSViv(D2epoch((double)kI(chdr)[row])))
-			  CS(KZ,return __Z2e == 1 ? newSViv(Z2epoch(kF(chdr)[row])) : newSVnv(Z2epochf(kF(chdr)[row])))
-			  CS(KU,return newSViv(kI(chdr)[row]))
-			  CS(KV,return newSViv(kI(chdr)[row]))
-			  CS(KT,return newSViv(kI(chdr)[row]))
-			  CD: return newSV(0);
-		};
-	}
+
+    return klistelem2p(chdr, row, ctyp);
+}
+
+SV*
+klistelem2p(Kstruct* lst, int idx, H typ) {
+	if ( typ > 0 )
+    {
+        switch(typ)
+        {
+            CS(KB,return newSViv(kG(lst)[idx]))
+            CS(KG,return newSViv(kG(lst)[idx]))
+            CS(KH,return newSViv(kH(lst)[idx]))
+            CS(KI,return newSViv(kI(lst)[idx]))
+            CS(KE,return newSVnv((double)kE(lst)[idx]))
+            CS(KF,return newSVnv((double)kF(lst)[idx]))
+            CS(KJ,return newSVnv((double)kJ(lst)[idx]))
+            CS(KC,return newSViv(kC(lst)[idx]))
+            CS(KS,return newSVpv((const char*)kS(lst)[idx],0))
+            CS(KM,return newSViv(kI(lst)[idx]))
+            CS(KD,return newSViv(D2epoch((double)kI(lst)[idx])))
+            CS(KZ,return __Z2e == 1 ? newSViv(Z2epoch(kF(lst)[idx])) : newSVnv(Z2epochf(kF(lst)[idx])))
+            CS(KU,return newSViv(kI(lst)[idx]))
+            CS(KV,return newSViv(kI(lst)[idx]))
+            CS(KT,return newSViv(kI(lst)[idx]))
+            CD: return newSV(0);
+        };
+    }
 	else
 	{
-		return k2p(kK(chdr)[row]);
+		return k2p(kK(lst)[idx]);
 	}
 }
 
@@ -355,7 +362,7 @@ k2pscalar (Kstruct * x) {
 		  CS(KJ,return newSVnv((double)x->j))
 		  CS(KC,return newSViv((int)x->g))
 		  CS(KS,return newSVpv((const char*)x->s,0))
-		  CS(128,return newSVpv((const char*)x->s,0))
+		  CS(128,return newSVpv((const char*)x->s,0))   // -128 is error
 		  CS(KM,return newSViv(x->i))
 		  CS(KD,return newSViv(D2epoch((double)x->i)))
 		  CS(KZ,return __Z2e == 1 ? newSViv(Z2epoch(x->f)) : newSVnv(Z2epochf(x->f)))
@@ -531,25 +538,7 @@ k2phash (Kstruct *tb)
 			H typ = xy->t;       // this objects type
 			typ = abs(typ);
 
-			switch(typ)
-			{
-				  CS(KB,sv = newSViv((int)(kG(xy)[i])))
-				  CS(KG,sv = newSViv((int)(kG(xy)[i])))
-				  CS(KH,sv = newSViv((int)(kH(xy)[i])))
-				  CS(KI,sv = newSViv(kI(xy)[i]))
-				  CS(KE,sv = newSVnv((double)(kE(xy)[i])))
-				  CS(KF,sv = newSVnv((double)(kF(xy)[i])))
-				  CS(KJ,sv = newSVnv((double)(kJ(xy)[i])))
-				  CS(KC,sv = newSViv((int)(kC(xy)[i])))
-				  CS(KS,sv = newSVpv((const char*)(kS(xy)[i]),0))
-				  CS(KM,sv = newSViv(kI(xy)[i]))
-				  CS(KD,sv = newSViv(D2epoch((double)(kI(xy)[i]))))
-				  CS(KZ,sv = __Z2e == 1 ? newSViv(Z2epoch(kF(xy)[i])) : newSVnv(Z2epochf((kF(xy)[i]))))
-				  CS(KU,sv = newSViv(kI(xy)[i]))
-				  CS(KV,sv = newSViv(kI(xy)[i]))
-				  CS(KT,sv = newSViv(kI(xy)[i]))
-				  CD: sv = newSV(0);
-			};
+            sv = klistelem2p(xy, i, typ);
 		}
 		else if(xy->t == 0) // its a mixed list of possible other lists/scalars
 		{
@@ -668,28 +657,12 @@ getKarray(K list, int i)
 		if(i < 0) { return newSV(0); } // undef
 	}
 
-	switch(list->t)
-	{
-		  CS(0, return(k2p(kK(list)[i])))
-		  CS(KB, return(newSViv(kG(list)[i])))
-		  CS(KG, return(newSViv(kG(list)[i])))
-		  CS(KH, return(newSViv(kH(list)[i])))
-		  CS(KI, return(newSViv(kI(list)[i])))
-		  CS(KE, return(newSVnv((double)kE(list)[i])))
-		  CS(KF, return(newSVnv((double)kF(list)[i])))
-		  CS(KJ, return(newSVnv((double)kJ(list)[i])))
-		  CS(KC, return(newSViv(kC(list)[i])))
-		  CS(KS, return(newSVpv((const char*)kS(list)[i],0)))
-		  CS(KM, return(newSViv(kI(list)[i])))
-		  CS(KD, return(newSViv(D2epoch((double)kI(list)[i]))))
-		  CS(KZ, return(__Z2e == 1 ? newSViv(Z2epoch(kF(list)[i])) : newSVnv(Z2epochf(kF(list)[i]))))
-		  CS(KU, return(newSViv(kI(list)[i])))
-		  CS(KV, return(newSViv(kI(list)[i])))
-		  CS(KT, return(newSViv(kI(list)[i])))
-		  CS(XT, return(k2p(kK(list)[i])))
-		  CS(XD, return(k2p(kK(list)[i])))
-		  CD: return newSV(0); // undef
-	};
+    switch (list->t)
+    {
+        CS(XT,return(k2p(kK(list)[i])))
+        CS(XD,return(k2p(kK(list)[i])))
+    }
+    return klistelem2p(list, i, list->t);
 }
 
 /* creating K object from Perl */
